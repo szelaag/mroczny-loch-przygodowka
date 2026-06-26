@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from prompts import SYSTEM_PROMPT, SUMMARY_PROMPT, GENESIS_PROMPT
+
 from anthropic import Anthropic
 from dotenv import load_dotenv
+
+from prompts import SYSTEM_PROMPT, SUMMARY_PROMPT, GENESIS_PROMPT
 
 load_dotenv()  # wczytuje klucz z .env
 client = Anthropic()  # klucz brany automatycznie ze środowiska
@@ -19,6 +21,11 @@ class Response:
     output_tokens: int
     stop_reason: str
 
+@dataclass
+class Usage:
+    total_cost: float = 0.0
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
 
 def ask_streaming(message_history: list[dict], system: str = SYSTEM_PROMPT) -> Response:
     full_response_parts = []
@@ -50,7 +57,7 @@ def history_to_text(message_history: list[dict]) -> str:
     return "".join(full_history)
 
 
-def summarize_history(message_history: list[dict]) -> str:
+def summarize_history(message_history: list[dict]) -> Response:
     zapis = history_to_text(message_history)
     response = client.messages.create(
         model=MODEL,
@@ -60,7 +67,12 @@ def summarize_history(message_history: list[dict]) -> str:
             {"role": "user", "content": f"Oto zapis przygody: \n {zapis} \n Stresc go."}
         ],
     )
-    return response.content[0].text
+    return Response(
+        text=response.content[0].text,
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+        stop_reason=response.stop_reason,
+    )
 
 
 def calculate_cost(input_tokens: int, output_tokens: int, model: str = MODEL) -> float:
@@ -70,16 +82,21 @@ def calculate_cost(input_tokens: int, output_tokens: int, model: str = MODEL) ->
     )
 
 
+def add_usage(usage: Usage, response: Response, model: str = MODEL) -> None:
+    usage.total_input_tokens += response.input_tokens
+    usage.total_output_tokens += response.output_tokens
+    usage.total_cost += calculate_cost(response.input_tokens, response.output_tokens, model)
+
+
 def main() -> None:
+    usage = Usage()
 
     # Genesis prompt + append do histori
     message_history: list[dict] = [{"role": "user", "content": GENESIS_PROMPT}]
     response = ask_streaming(message_history)
     message_history.append({"role": "assistant", "content": response.text})
 
-    total_cost: float = 0.0
-    total_input_tokens: int = 0
-    total_output_tokens: int = 0
+    add_usage(usage, response)
 
     while True:
         user = input("\n > ").strip()
@@ -91,14 +108,15 @@ def main() -> None:
             break
         if user.lower() in {"/historia", "/history"}:
             summary = summarize_history(message_history)
-            print(summary)
+            print(summary.text)
+            add_usage(usage, summary)
             continue
         if user.lower() in {"/cost", "/koszt"}:
-            print("--- Koszt rozmowy ---")
-            print(f" USD: {total_cost:.6f} | PLN: {total_cost * USD_PLN:.6f}\n")
+            print("\n--- Koszt rozmowy ---")
+            print(f" USD: {usage.total_cost:.6f} | PLN: {usage.total_cost * USD_PLN:.6f}\n")
             print("--- Tokeny ---")
             print(
-                f" Input: {total_input_tokens} | Output: {total_output_tokens} | Suma: {total_input_tokens + total_output_tokens}\n"
+                f" Input: {usage.total_input_tokens} | Output: {usage.total_output_tokens} | Suma: {usage.total_input_tokens + usage.total_output_tokens}\n"
             )
             continue
 
@@ -107,9 +125,7 @@ def main() -> None:
         response = ask_streaming(message_history)
         message_history.append({"role": "assistant", "content": response.text})
 
-        total_input_tokens += response.input_tokens
-        total_output_tokens += response.output_tokens
-        total_cost += calculate_cost(response.input_tokens, response.output_tokens)
+        add_usage(usage, response)
 
 
 if __name__ == "__main__":

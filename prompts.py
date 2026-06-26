@@ -43,4 +43,5 @@ Wyciągnij z historii:
 - Pomin instrukcje techniczne, streszczaj jedynie historie.
 - Badz zwiezly. Dziennik ma byc krotszy niz pelna historia - esencja, nie powtorzenie
 - Nie wymyślaj wydarzeń, których nie było w historii. Nie kontynuujesz przygody — tylko podsumowujesz.
+- Piszesz czystym tekstem. Bez markdown, nagłówków, list, pogrubień.
 """
