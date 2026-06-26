@@ -18,6 +18,8 @@ INVENTORY_TOOL = {
     "description": (
         "Wywołaj ZA KAŻDYM RAZEM, gdy gracz podnosi, zdobywa, traci, "
         "używa lub gubi przedmiot. Podaj listę przedmiotów dodanych i usuniętych."
+        "Nazywaj PROSTO: nie 'zardzewialy miecz z lochow' tylko miecz BEZ POLSKICH ZNAKOW "
+        "Wywołuj TYLKO gdy gracz AKTYWNIE zdobywa/traci przedmiot przez swoją akcję. NIE wywołuj dla przedmiotów, które jedynie istnieją w scenie, ale których gracz nie wziął."
     ),
     "input_schema": {
         "type": "object",
@@ -37,30 +39,56 @@ INVENTORY_TOOL = {
     },
 }
 
+@dataclass
+class Item:
+    name: str
+    type: str
+    value: int
+
+ITEM_CATALOG: dict[str, Item] = {
+    "klucz": Item(name="klucz", type="klucz", value=0),
+    "miecz": Item(name="miecz", type="bron", value=50),
+    "pochodnia": Item(name="pochodnia", type="narzedzie", value=10),
+    "bandaz": Item(name="bandaz", type="uzywalne", value=25)
+}
+
+def create_item(name: str) -> Item:
+    name = name.lower()
+    if name in ITEM_CATALOG:
+        return ITEM_CATALOG[name]
+    return Item(name=name, type="nieznany", value=0)
+    # create_item zwraca współdzielony obiekt z katalogu — kopia gdy Item stanie się mutowalny
+
+
+
+
 def ask_with_tool(message: str) -> object:
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         tools=[INVENTORY_TOOL],
+        system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": message}]
     )
     return response
 
 
-def handle_response(response: object, inventory: list[str]):
+def handle_response(response: object, inventory: list[Item]):
     for block in response.content:
         if block.type == "text":
             print(f"Narracja : {block.text}")
         elif block.type == "tool_use" and block.name == "aktualizuj_ekwipunek":
             for item in block.input["dodane"]:
-                inventory.append(item)
-            for item in block.input["usuniete"]:
-                if item in inventory:       # swiadomie nie komplikuje ale powiedz mi czy tutaj najbardizej profesjonalnym rozwiazaniem nie przy wersji uproszczonej nie byloby zrobienie try except i zwracac modelowi ze nie ma takiego przedmiotu?
-                    inventory.remove(item)
+                inventory.append(create_item(item))
+            for name in block.input["usuniete"]:           # name to string
+                for item in inventory:                      # przejdź Item-y w inventory
+                    if item.name == name:                   # znajdź pasujący po nazwie
+                        inventory.remove(item)              # usuń TEN obiekt
+                        break                               # usuń jeden, przestań szukać
 
 def main() -> None:
-    inventory: list[str] = []
-    response = ask_with_tool("Rozglądam się i podnoszę zardzewiały klucz ze stołu. I odkladam go znowu na stol")
+    inventory: list[Item] = []
+    response = ask_with_tool("Rozglądam się po celi czy nie ma zadnych przedmiotow.")
     # print(f"stop reason: {response.stop_reason}")
     # for block in response.content:
     #     print("---")
