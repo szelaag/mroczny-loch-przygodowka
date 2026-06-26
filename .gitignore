@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables (SEKRETY!)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/.history/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+logs/
+
+# Data outputs (mogą być duże, mogą zawierać sekrety)
+data/outputs/
+
+# Temporary
+*.tmp
+*.temp
+.cache/
+
+# Notes prywatne (jeśli chcesz)
+notes/private/
+
+# Jupyter (na przyszłość gdy zaczniesz używać)
+.ipynb_checkpoints/
+*.ipynb
