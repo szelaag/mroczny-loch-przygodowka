@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from anthropic import Anthropic, APIResponse
 from dotenv import load_dotenv
 
-from prompts import SYSTEM_PROMPT, SUMMARY_PROMPT, GENESIS_PROMPT
+from prompts import NARRATOR_PROMPT, SUMMARY_PROMPT, GENESIS_PROMPT
 
 load_dotenv()  # wczytuje klucz z .env
 client = Anthropic()  # klucz brany automatycznie ze środowiska
@@ -67,7 +67,7 @@ def ask_with_tool(message: str) -> object:
         model=MODEL,
         max_tokens=MAX_TOKENS,
         tools=[INVENTORY_TOOL],
-        system=SYSTEM_PROMPT,
+        system=NARRATOR_PROMPT,
         messages=[{"role": "user", "content": message}]
     )
     return response
