@@ -4,9 +4,9 @@ from venv import create
 from anthropic import Anthropic
 from anthropic.types import Message
 from dotenv import load_dotenv
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, ValidationError
 from cost import add_usage
-from items import ITEM_CATALOG
+from items import ITEM_CATALOG, create_item
 from combat import ENEMY_CATALOG
 from prompts import GENERATOR_PROMPT
 from models import Attack, Item, ItemType, Usage, Response
@@ -46,6 +46,7 @@ class ItemStats(BaseModel):
             raise ValueError("wartosc nie moze byc ujemna")
         return v
 
+LIMIT = 3
 
 STATS_TOOL = {
     "name": "generuj_nieznane",
@@ -114,58 +115,71 @@ def catalog_to_examples(catalog: dict) -> str:
     return "\n".join(linie)
 
 
-def ask_for_item_stats(item_name: str) -> Message:
+def ask_for_item_stats(messages: list[dict]) -> Message:
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=GENERATOR_PROMPT + catalog_to_examples(ITEM_CATALOG),
         tools=[STATS_TOOL],
         tool_choice={"type": "tool", "name": "generuj_nieznane"},
-        messages=[{"role": "user", "content": f"Wygeneruj statystyki dla: {item_name}"}],
+        messages=messages,
     )
     return response
 
 
 def generuj_statystyki(nazwa: str, usage: Usage) -> Item:
-    message = ask_for_item_stats(nazwa)
-    block = message.content[0]
-    stats = block.input
+    messages = [{"role": "user", "content": f"Wygeneruj statystyki dla: {nazwa}"}]
 
-    try:
-        zwalidowane = ItemStats(**stats)
-    except ValidationError as e:
-        print(f"Walidacja nie przeszla: {e}")
-        return create_item(nazwa)
-    
-    
-    typ = ItemType(zwalidowane.typ)
-    wartosc = zwalidowane.wartosc
-    ataki = []
-    if zwalidowane.attacks:
-        for atak in zwalidowane.attacks:
-            ataki.append(Attack(
-                name=atak.name,
-                damage_min=atak.damage_min,     
-                damage_max=atak.damage_max,
-                miss_chance=atak.miss_chance,
-            ))
+    for proba in range(LIMIT):
+        message = ask_for_item_stats(messages)
+        block = message.content[0]
+        stats = block.input
 
-    resp = Response(
-        text="",
-        input_tokens=message.usage.input_tokens,
-        output_tokens=message.usage.output_tokens,
-        stop_reason=message.stop_reason,
-    )
-    add_usage(usage, resp)
-
-    return Item(name = nazwa, type=typ, value=wartosc, attacks=ataki)
+        resp = Response(
+            text="",
+            input_tokens=message.usage.input_tokens,
+            output_tokens=message.usage.output_tokens,
+            stop_reason=message.stop_reason,
+        )
+        add_usage(usage, resp)
 
 
+        try:
+            zwalidowane = ItemStats(**stats)
+        except ValidationError as e:
+            
+            print(f"Proba {proba + 1}: walidacja nie przeszla: {e}")
+            messages.append({"role": "assistant", "content": message.content})
+            messages.append({
+                "role": "user",
+                "content": [{
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": f"Statystyki niepoprawne: {e}. Popraw i wygeneruj ponownie.",
+                }],
+            })
+            continue   
+
+        typ = ItemType(zwalidowane.typ)
+        wartosc = zwalidowane.wartosc
+        ataki = []
+        if zwalidowane.attacks:
+            for atak in zwalidowane.attacks:
+                ataki.append(Attack(
+                    name=atak.name,
+                    damage_min=atak.damage_min,
+                    damage_max=atak.damage_max,
+                    miss_chance=atak.miss_chance,
+                ))
+        return Item(name=nazwa, type=typ, value=wartosc, attacks=ataki)
+
+    print(f"Limit prob ({LIMIT}) wyczerpany, fallback dla: {nazwa}")
+    return create_item(nazwa)
 
 def main() -> None:
-    testy = ["noz"]
-    for test in testy:
-        print(generuj_statystyki(test))
+    usage = Usage()
+    item = generuj_statystyki("miecz testowy", usage)
+    print(f"\nWynik: {item.name}, typ: {item.type}, akcje: {len(item.attacks)}")
 
 if __name__ == "__main__":
     main()
