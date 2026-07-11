@@ -49,3 +49,5 @@ notes/private/
 # Jupyter (na przyszłość gdy zaczniesz używać)
 .ipynb_checkpoints/
 *.ipynb
+
+md_logs/
