@@ -37,8 +37,8 @@ def handle_response(response: Message, inventory: list[Item]) -> Response:
             for item in block.input["dodane"]:
                 nowy = create_item(item)
                 inventory.append(nowy)
-                if nowy == ItemType.NIEZNANY:
-                    nowe_nieznane.append(nowy)
+                if nowy.type == ItemType.NIEZNANY:
+                    nowe_nieznane.append(nowy.name)
             for name in block.input["usuniete"]:
                 for item in inventory:
                     if item.name == name:

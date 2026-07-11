@@ -1,10 +1,11 @@
 from anthropic import Anthropic
 from anthropic.types import Message
 from dotenv import load_dotenv
+from cost import add_usage
 from items import ITEM_CATALOG
 from combat import ENEMY_CATALOG
 from prompts import GENERATOR_PROMPT
-
+from models import Attack, Item, ItemType, Usage, Response
 
 from config import MODEL, MAX_TOKENS
 load_dotenv()
@@ -36,11 +37,11 @@ STATS_TOOL = {
                             "type": "string",
                             "description": "nazwa ataku"
                         },
-                        "dmg_min": {
+                        "damage_min": {
                             "type": "integer",
                             "description": "minimalne obrazenie, a do randinta",
                         },
-                        "dmg_max": {
+                        "damage_max": {
                             "type": "integer",
                             "description": "maksymalne obrazenia - wieksze niz minimalne. b do randinta"
                         },
@@ -49,7 +50,7 @@ STATS_TOOL = {
                             "description": "dla mocniejszych atakow w celu zbalansowania float od 0.0 do 1.0 szansa na nietrafienie - tradeoff dla mocniejszych atakow"
                         }
                     },
-                    "required": ["name", "dmg_min", "dmg_max", "miss_chance"]
+                    "required": ["name", "damage_min", "damage_max", "miss_chance"]
                 }
             }
         },
@@ -90,15 +91,39 @@ def ask_for_item_stats(item_name: str) -> Message:
     return response
 
 
-def generuj_statystyki(nazwa: str) -> None:
-    block = ask_for_item_stats(nazwa).content[0]
+def generuj_statystyki(nazwa: str, usage: Usage) -> Item:
+    message = ask_for_item_stats(nazwa)
+    block = message.content[0]
     stats = block.input
-    print(stats)
+    
+    typ = ItemType(stats["typ"])
+    wartosc = int(stats["wartosc"])
+    ataki = []
+    if stats["attacks"]:
+        for atak in stats["attacks"]:
+            ataki.append(Attack(
+                name=atak["name"],
+                damage_min=atak["damage_min"],     
+                damage_max=atak["damage_max"],
+                miss_chance=atak["miss_chance"],
+            ))
+
+    resp = Response(
+        text="",
+        input_tokens=message.usage.input_tokens,
+        output_tokens=message.usage.output_tokens,
+        stop_reason=message.stop_reason,
+    )
+    add_usage(usage, resp)
+
+    return Item(name = nazwa, type=typ, value=wartosc, attacks=ataki)
+
+
 
 def main() -> None:
-    testy = ["wielki magiczny miecz", "sztylet asasyna", "noz", "rozdzka antycznego czarodzieja z lodowej krainy"]
+    testy = ["noz"]
     for test in testy:
-        generuj_statystyki(test)
+        print(generuj_statystyki(test))
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,9 @@
+from operator import inv
+
+from generation import generuj_statystyki
 from helper import clear_system
-from items import create_item
-from models import Usage, GameState, Enemy
+from items import ITEM_CATALOG, create_item
+from models import ItemType, Usage, GameState, Enemy
 from config import USD_PLN
 from api import ask_narrator, handle_response, summarize_history
 from cost import add_usage
@@ -123,6 +126,17 @@ def main() -> None:
         message_history.append({"role": "assistant", "content": result.text})
 
         add_usage(usage, result)
+
+        for nazwa in set(result.nowe_nieznane):
+            item = generuj_statystyki(nazwa, usage)
+            ITEM_CATALOG[nazwa] = item
+        
+        
+        for item in state.inventory[:]:
+            if item.type == ItemType.NIEZNANY and item.name in ITEM_CATALOG:
+                state.inventory.remove(item)
+                state.inventory.append(ITEM_CATALOG[item.name])
+
 
         if result.combat_with:
             enemy = create_enemy(result.combat_with)

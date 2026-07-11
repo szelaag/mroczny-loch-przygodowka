@@ -105,7 +105,7 @@ def prowadz_walke(state: GameState, enemy: Enemy) -> bool:
         obrazenia = policz_obrazenia(atak)
         
         if obrazenia is PUDLO:
-            print(f"Nie trafiles! | Wrogowi pozostalo: {enemy.hp}")
+            print(f"\nNie trafiles! | Wrogowi pozostalo: {enemy.hp}")
         else:
             enemy.hp -= obrazenia
             time.sleep(0.5)
