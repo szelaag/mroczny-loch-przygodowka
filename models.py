@@ -41,6 +41,7 @@ class Response:
     output_tokens: int
     stop_reason: str
     combat_with: str | None = None
+    nowe_nieznane: list[str] = field(default_factory=list)
 
 
 @dataclass

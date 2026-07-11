@@ -1,10 +1,19 @@
-from items import ITEM_CATALOG, Item, ItemType
+from anthropic import Anthropic
+from anthropic.types import Message
+from dotenv import load_dotenv
+from items import ITEM_CATALOG
 from combat import ENEMY_CATALOG
+from prompts import GENERATOR_PROMPT
+
+
+from config import MODEL, MAX_TOKENS
+load_dotenv()
+client = Anthropic(max_retries=3)
 
 
 STATS_TOOL = {
     "name": "generuj_nieznane",
-    "description": f"wygeneruj wartosci przedmiotu na podstawie jego nazwy oraz podanego obecnego katalogu znanych przedmiotow w celu zrozumienia SKALI i UTRZYMANIU BALANSU: katalog",
+    "description": f"wygeneruj wartosci przedmiotu na podstawie jego nazwy oraz podanego obecnego katalogu znanych przedmiotow w celu zrozumienia SKALI i UTRZYMANIU BALANSU",
     "input_schema": {
         "type": "object",
         "properties": {
@@ -19,7 +28,7 @@ STATS_TOOL = {
             },
             "attacks": {
                 "type": "array",
-                "description": "attacks JEDYNIE dla BRONI, wszystko inne pusta lista, przykladowe rozklady atakow w katalogu, dla zwyklych broni 2-3 ataki. dla lepszych ciekawszych, czyli dla np: magiczny miecz; nie poprostu miecz",
+                "description": "attacks JEDYNIE dla BRONI, wszystko inne pusta lista, przykladowe rozklady atakow w katalogu, dla zwyklych broni 2-3 ataki.",
                 "items": {
                     "type": "object",
                     "properties": {
@@ -48,26 +57,6 @@ STATS_TOOL = {
     }
 }
 
-# ITEM_CATALOG: dict[str, Item] = {
-#     "miecz": Item(
-#         name="miecz", type=ItemType.BRON, value=50,
-#         attacks=[
-#             Attack("light", 4, 6),
-#             Attack("heavy", 10, 16, miss_chance=0.4),
-#             Attack("stab", 7, 10),
-#         ],
-#     ),
-#     "sztylet": Item(          # druga broń do testów wyboru
-#         name="sztylet", type=ItemType.BRON, value=20,
-#         attacks=[
-#             Attack("light", 3, 5),
-#             Attack("stab", 6, 8),
-#         ],
-#     ),
-#     "klucz": Item(name="klucz", type=ItemType.KLUCZ, value=0),
-#     "pochodnia": Item(name="pochodnia", type=ItemType.NARZEDZIE, value=10),
-#     "bandaz": Item(name="bandaz", type=ItemType.ZUZYWALNY, value=25)
-# }
 
 def catalog_to_examples(catalog: dict) -> str:
     """Zamienia katalog na czytelne przykłady dla generatora (skala/balans)."""
@@ -88,11 +77,28 @@ def catalog_to_examples(catalog: dict) -> str:
         linie.append(linia)
     return "\n".join(linie)
 
-def generuj_statystyki():
-    pass
+
+def ask_for_item_stats(item_name: str) -> Message:
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=GENERATOR_PROMPT + catalog_to_examples(ITEM_CATALOG),
+        tools=[STATS_TOOL],
+        tool_choice={"type": "tool", "name": "generuj_nieznane"},
+        messages=[{"role": "user", "content": f"Wygeneruj statystyki dla: {item_name}"}],
+    )
+    return response
+
+
+def generuj_statystyki(nazwa: str) -> None:
+    block = ask_for_item_stats(nazwa).content[0]
+    stats = block.input
+    print(stats)
 
 def main() -> None:
-    catalog_to_examples(ITEM_CATALOG)
+    testy = ["wielki magiczny miecz", "sztylet asasyna", "noz", "rozdzka antycznego czarodzieja z lodowej krainy"]
+    for test in testy:
+        generuj_statystyki(test)
 
 if __name__ == "__main__":
     main()

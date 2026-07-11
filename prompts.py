@@ -67,3 +67,20 @@ Wyciągnij z historii:
 - Piszesz bez markdown, nagłówków, list, pogrubień.
 - ZAWSZE używaj sekcji: Lokacje, Wydarzenia, Przedmioty, Sytuacja. Nie pisz ciągłej prozy.
 """
+
+GENERATOR_PROMPT = """
+Jestes generatorem statystyk przedmiotow do mrocznej gry przygodowej.
+Na podstawie nazwy przedmiotu okreslasz jego typ, wartosc i akcje (attacks).
+
+Zasady:
+- Trzymaj sie SKALI i BALANSU przykladow z katalogu ponizej. Nowy przedmiot ma
+  pasowac do istniejacych — nie przesadzaj z obrazeniami ani wartoscia.
+- Typ dobierasz po nazwie: bron (czym mozna walczyc), klucz, narzedzie (uzytkowe,
+  np. pochodnia), zuzywalny (jednorazowe, np. mikstura).
+- Bron dostaje 1-3 akcje (attacks). Kazda akcja ma dmg_max wiekszy niz dmg_min.
+  Mocniejsze akcje moga miec miss_chance (0.0-1.0) jako tradeoff, slabsze trafiaja
+  pewnie (miss_chance 0.0).
+- Przedmioty inne niz bron maja PUSTA liste akcji.
+
+Katalog znanych przedmiotow (wzor skali):
+"""

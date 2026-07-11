@@ -3,10 +3,11 @@ from anthropic.types import Message
 from dotenv import load_dotenv
 
 from config import MODEL, MAX_TOKENS
-from models import Response, Item
-from prompts import NARRATOR_PROMPT, SUMMARY_PROMPT
-from items import INVENTORY_TOOL, create_item, inventory_to_text
+from models import ItemType, Response, Item
+from prompts import GENERATOR_PROMPT, NARRATOR_PROMPT, SUMMARY_PROMPT
+from items import INVENTORY_TOOL, ITEM_CATALOG, create_item, inventory_to_text
 from combat import COMBAT_TOOL
+from generation import STATS_TOOL, catalog_to_examples
 
 load_dotenv()
 client = Anthropic(max_retries=3)
@@ -27,13 +28,17 @@ def ask_narrator(message_history: list[dict], inventory: list[Item]) -> Message:
 def handle_response(response: Message, inventory: list[Item]) -> Response:
     narracja = ""
     combat_with = None 
+    nowe_nieznane = []
     for block in response.content:
         if block.type == "text":
             print(f"Narrator: {block.text}")
             narracja = block.text
         elif block.type == "tool_use" and block.name == "aktualizuj_ekwipunek":
             for item in block.input["dodane"]:
-                inventory.append(create_item(item))
+                nowy = create_item(item)
+                inventory.append(nowy)
+                if nowy == ItemType.NIEZNANY:
+                    nowe_nieznane.append(nowy)
             for name in block.input["usuniete"]:
                 for item in inventory:
                     if item.name == name:
@@ -46,7 +51,8 @@ def handle_response(response: Message, inventory: list[Item]) -> Response:
         input_tokens=response.usage.input_tokens,
         output_tokens=response.usage.output_tokens,
         stop_reason=response.stop_reason,
-        combat_with=combat_with
+        combat_with=combat_with,
+        nowe_nieznane=nowe_nieznane
     )
 
 
