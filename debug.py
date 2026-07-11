@@ -57,7 +57,7 @@ def cmd_show_catalog(parts: list[str]) -> None:
         if user == "enemy":
             show_catalog(ENEMY_CATALOG)
         elif user == "item":
-            show_catalog[ITEM_CATALOG]
+            show_catalog(ITEM_CATALOG)
         else:
             print(f"$ Nie ma katalogu: {user}")
 

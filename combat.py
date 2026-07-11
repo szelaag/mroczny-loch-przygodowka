@@ -72,7 +72,7 @@ def wybierz_akcje(akcje: list[Attack]) -> Attack:
     print("Twoja tura, wybierz atak:")
 
     for i, akcja in enumerate(akcje):
-        print(f"{i+1}. {akcja.name} | Obrazenia: {akcja.damage_min} - {akcja.damage_max}",end="") # dla golych rak zostawiam wybor mimo ze tylko 1 akcja, ale gdybym bral automatycznie to cala interaktywnosc znika, lepiej zeby bylo wiadomo ze wybor JEST poprostu gdy masz bron
+        print(f"{i+1}. {akcja.name} | Obrazenia: {akcja.damage_min} - {akcja.damage_max}",end="")
         if akcja.miss_chance: print(f" | Szansa na chybienie: {akcja.miss_chance}", end="")
         print()
 

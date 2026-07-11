@@ -5,7 +5,3 @@ print(len(miecz.attacks))               # 3
 print(create_item("noz").attacks)       # [] (fallback bez akcji)
 print(create_item("klucz").attacks)     # [] (nie-broń)
 
-from items import create_item
-m1 = create_item("miecz")
-m2 = create_item("miecz")
-print(m1.attacks is m2.attacks)    # True = współdzielona lista (problem przy mutacji akcji), False = osobna

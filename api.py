@@ -9,7 +9,7 @@ from items import INVENTORY_TOOL, create_item, inventory_to_text
 from combat import COMBAT_TOOL
 
 load_dotenv()
-client = Anthropic()
+client = Anthropic(max_retries=3)
 
 
 def ask_narrator(message_history: list[dict], inventory: list[Item]) -> Message:
