@@ -1,5 +1,3 @@
-from operator import inv
-
 from generation import generuj_statystyki
 from helper import clear_system
 from items import ITEM_CATALOG, create_item

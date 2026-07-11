@@ -1,6 +1,10 @@
+from multiprocessing import Value
+from venv import create
+
 from anthropic import Anthropic
 from anthropic.types import Message
 from dotenv import load_dotenv
+from pydantic import BaseModel, field_validator, model_validator
 from cost import add_usage
 from items import ITEM_CATALOG
 from combat import ENEMY_CATALOG
@@ -10,6 +14,37 @@ from models import Attack, Item, ItemType, Usage, Response
 from config import MODEL, MAX_TOKENS
 load_dotenv()
 client = Anthropic(max_retries=3)
+
+class AttackStats(BaseModel):
+    name: str
+    damage_min: int
+    damage_max: int
+    miss_chance: float
+
+    @field_validator("miss_chance")
+    @classmethod
+    def miss_w_zakresie(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("miss_chance musi byc miedzy 0.0 a 1.0")
+        return v
+    
+    @model_validator(mode="after")
+    def min_mniejszy_od_max(self):
+        if self.damage_min > self.damage_max:
+            raise ValueError(f"damage_min {self.damage_min} > damage_max {self.damage_max}")
+        return self
+
+class ItemStats(BaseModel):
+    typ: str
+    wartosc: int
+    attacks: list[AttackStats]
+
+    @field_validator("wartosc")
+    @classmethod
+    def wartosc_nieujemna(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("wartosc nie moze byc ujemna")
+        return v
 
 
 STATS_TOOL = {
@@ -95,17 +130,24 @@ def generuj_statystyki(nazwa: str, usage: Usage) -> Item:
     message = ask_for_item_stats(nazwa)
     block = message.content[0]
     stats = block.input
+
+    try:
+        zwalidowane = ItemStats(**stats)
+    except ValidationError as e:
+        print(f"Walidacja nie przeszla: {e}")
+        return create_item(nazwa)
     
-    typ = ItemType(stats["typ"])
-    wartosc = int(stats["wartosc"])
+    
+    typ = ItemType(zwalidowane.typ)
+    wartosc = zwalidowane.wartosc
     ataki = []
-    if stats["attacks"]:
-        for atak in stats["attacks"]:
+    if zwalidowane.attacks:
+        for atak in zwalidowane.attacks:
             ataki.append(Attack(
-                name=atak["name"],
-                damage_min=atak["damage_min"],     
-                damage_max=atak["damage_max"],
-                miss_chance=atak["miss_chance"],
+                name=atak.name,
+                damage_min=atak.damage_min,     
+                damage_max=atak.damage_max,
+                miss_chance=atak.miss_chance,
             ))
 
     resp = Response(
