@@ -1,5 +1,6 @@
 from dataclasses import asdict
 
+from generation import generuj_statystyki
 from models import GameState, Item, ItemType, Attack, Enemy
 from items import ITEM_CATALOG, create_item
 from combat import ENEMY_CATALOG, create_enemy, prowadz_walke, wybierz_akcje, wybierz_bron
@@ -354,6 +355,10 @@ def cmd_create(state: GameState, parts: list[str]) -> None:
         state.inventory.append(create_item(dane["nazwa"]))
         print(f" $ dodano '{dane['nazwa']}' do ekwipunku")
 
+# def cmd_generate(state: GameState, parts: list[str]) -> None:
+#     if len(parts) > 1:
+#         nowy_przedmiot = generuj_statystyki(parts[1], Usage())
+
 
 def modify_state(state: GameState):
 
@@ -403,6 +408,9 @@ def modify_state(state: GameState):
             print(bron)
             akcja = wybierz_akcje(bron)
             print(akcja)
+
+        elif parts[0] == "$gen":
+            pass
 
         else:
             print(f"$ komenda: {user} nie istnieje\n")

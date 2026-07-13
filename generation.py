@@ -1,6 +1,3 @@
-from multiprocessing import Value
-from venv import create
-
 from anthropic import Anthropic
 from anthropic.types import Message
 from dotenv import load_dotenv
@@ -178,8 +175,10 @@ def generuj_statystyki(nazwa: str, usage: Usage) -> Item:
 
 def main() -> None:
     usage = Usage()
-    item = generuj_statystyki("miecz testowy", usage)
-    print(f"\nWynik: {item.name}, typ: {item.type}, akcje: {len(item.attacks)}")
+    # test = ["wielki magiczny miecz", "maly noz kuchenny", "szczotka do zebow"]
+    # for item in test:
+    #     wygenerowany = generuj_statystyki(item, usage)
+    #     print(wygenerowany)
 
 if __name__ == "__main__":
     main()

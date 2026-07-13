@@ -51,3 +51,7 @@ notes/private/
 *.ipynb
 
 md_logs/
+
+
+# save gry
+saves/ 
