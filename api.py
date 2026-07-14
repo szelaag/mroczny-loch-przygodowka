@@ -13,16 +13,21 @@ load_dotenv()
 client = Anthropic(max_retries=3)
 
 
-def ask_narrator(message_history: list[dict], inventory: list[Item]) -> Message:
-    """Woła narratora z narzędziem ekwipunku. Zwraca surową odpowiedź API."""
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=NARRATOR_PROMPT + "\n\n" + inventory_to_text(inventory),
-        tools=[INVENTORY_TOOL, COMBAT_TOOL],
-        messages=message_history,
-    )
-    return response
+def ask_narrator(
+    message_history: list[dict],
+    inventory: list[Item],
+    tool_choice: dict | None = None,
+) -> Message:
+    kwargs = {
+        "model": MODEL,
+        "max_tokens": MAX_TOKENS,
+        "system": NARRATOR_PROMPT + "\n\n" + inventory_to_text(inventory),
+        "tools": [INVENTORY_TOOL, COMBAT_TOOL],
+        "messages": message_history,
+    }
+    if tool_choice:
+        kwargs["tool_choice"] = tool_choice
+    return client.messages.create(**kwargs)
 
 
 def handle_response(response: Message, inventory: list[Item]) -> Response:
@@ -31,7 +36,6 @@ def handle_response(response: Message, inventory: list[Item]) -> Response:
     nowe_nieznane = []
     for block in response.content:
         if block.type == "text":
-            print(f"Narrator: {block.text}")
             narracja = block.text
         elif block.type == "tool_use" and block.name == "aktualizuj_ekwipunek":
             for item in block.input["dodane"]:
@@ -80,3 +84,12 @@ def summarize_history(message_history: list[dict]) -> Response:
         output_tokens=response.usage.output_tokens,
         stop_reason=response.stop_reason,
     )
+
+
+# w api.py, tymczasowo w __main__
+msg = ask_narrator(
+    [{"role": "user", "content": "[INSTRUKCJA] Opisz koniec walki."}],
+    [],
+    tool_choice={"type": "none"},
+)
+print([b.type for b in msg.content])     # ma być ['text'], nigdy 'tool_use'
