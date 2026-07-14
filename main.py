@@ -9,6 +9,7 @@ from prompts import GENESIS_PROMPT
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
 from save import cmd_zapisz, ekran_startowy
+from ui import pokaz_eq
 
 
 
@@ -54,12 +55,7 @@ def main() -> None:
             continue
         
         if cmd in {"/ekwipunek", "/eq"}:
-            print("\n--- Ekwipunek ---")
-            if not state.inventory:
-                print(" Pusto")
-            else:
-                for i, item in enumerate(state.inventory):
-                    print(f" {i+1}. {item.name} | Wartosc: {item.value}")
+            pokaz_eq(state.inventory)
             continue 
             
         if cmd in {"/stan", "/hp"}:
