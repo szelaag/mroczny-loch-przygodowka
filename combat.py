@@ -2,7 +2,7 @@ from dataclasses import replace
 import time
 from models import Attack, Enemy, GameState, Item
 import random
-from ui import panel_tury, pokaz_bronie, pokaz_komunikat, pusty_print, pokaz_wynik, pokaz_gole_rece, input_walki
+from ui import panel_tury, pokaz_bronie, pokaz_komunikat, pusty_print, pokaz_wynik, pokaz_gole_rece, input_centrowany, wybierz_numer
 
 
 ENEMY_CATALOG: dict[str, Enemy] = {
@@ -56,7 +56,7 @@ def wybierz_bron(state: GameState) -> list[Attack]:
     pokaz_bronie(bronie)
 
     while True:
-        user = input_walki()
+        user = input_centrowany()
         if not user.isdigit():
             pokaz_komunikat("Podaj poprawna liczbe")
             continue
@@ -70,7 +70,7 @@ def wybierz_bron(state: GameState) -> list[Attack]:
 def wybierz_akcje(akcje: list[Attack]) -> Attack:
     """Pyta o numer akcji. NIE wyswietla tabeli — robi to panel_tury."""
     while True:
-        user = input_walki()
+        user = input_centrowany()
         if not user.isdigit():
             pokaz_komunikat("Podaj poprawna liczbe")
             continue

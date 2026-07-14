@@ -1,28 +1,26 @@
 from generation import generuj_statystyki
-from helper import clear_system
 from items import ITEM_CATALOG, create_item
 from models import ItemType
-from config import USD_PLN
 from api import ask_narrator, handle_response, summarize_history
 from cost import add_usage
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
 from save import cmd_zapisz, ekran_startowy
-from ui import pokaz_eq, pokaz_narracje, pokaz_koszt, pokaz_stan_walki, pasek_hp, pokaz_komunikat
-import time
-
+from ui import pokaz_eq, pokaz_narracje, pokaz_koszt, pokaz_komendy, pokaz_stan_hp, pokaz_komunikat, pokaz_tytul, pokaz_smierc
 from ui import console
 
+import sys
+
+DEBUG = "--debug" in sys.argv
+
+
 def main() -> None:
-    clear_system()
-    print("=== Przygodowka ===")
+    pokaz_tytul()
 
     state, usage, message_history, nowa_gra = ekran_startowy()
 
-    start = input("\nENTER aby rozpoczac ").lower().strip()
-
-    if start == "$$":
-        modify_state(state) # tryb debug
+    if DEBUG:
+        modify_state(state)
 
     if nowa_gra:
         if state.hp > 0:
@@ -32,11 +30,14 @@ def main() -> None:
             message_history.append({"role": "assistant", "content": result.text})
             add_usage(usage, result)
     else:
-        summary = summarize_history(message_history)
-        pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
-        add_usage(usage, summary)
-        console.rule("[orange1]Stoisz tutaj[/]")
-        pokaz_narracje(f"{message_history[-1]['content']}")
+        chce = console.input("\n[dim]Przypomniec historie? (ENTER = tak | n = nie)[/] ").strip().lower()
+
+        if chce != "n":
+            summary = summarize_history(message_history)
+            pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
+            add_usage(usage, summary)
+        
+        pokaz_narracje(message_history[-1]["content"])     # ← ZAWSZE (darmowe)
 
     while True:
         user = console.input("\n[bold cyan]     > [/]").strip().lower()
@@ -49,6 +50,10 @@ def main() -> None:
             print("Koniec przygody.")
             break
 
+        if cmd == "/pomoc":
+            pokaz_komendy()
+            continue
+
         if cmd in {"/historia", "/history"}:
             summary = summarize_history(message_history)
             pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
@@ -59,9 +64,8 @@ def main() -> None:
             pokaz_eq(state.inventory)
             continue 
             
-        if cmd in {"/stan", "/hp"}: # do zrobienia funkcja w ui
-            print("\n--- Stan ---")
-            print(f" HP: {state.hp}")
+        if cmd in {"/stan", "/hp"}: 
+            pokaz_stan_hp(state)
             continue
 
         if cmd in {"/cost", "/koszt"}:
@@ -104,18 +108,15 @@ def main() -> None:
         if cmd in {"$state", "$debug", "$$"}:
             modify_state(state)
             continue
-
-        if cmd == "$cs": clear_system(); continue
             
         if cmd.startswith("/"):
-            print("\n --- Lista dostepnych komend ---")
-            print(" /ekwipunek | /stan | /historia | /koszt | /wyjdz ")
+            pokaz_komendy()
             continue
         if cmd.startswith("$"):
             print(f"$ komenda: {user} nie istnieje")
             continue
         if state.hp <= 0:
-            print("Nie żyjesz. Możesz wyjść (/wyjdz) lub sprawdzic statystyki.")
+            pokaz_smierc()
             continue
 
 

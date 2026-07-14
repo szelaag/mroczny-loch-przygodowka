@@ -6,10 +6,32 @@ from rich import box
 from rich.console import Group
 from rich.text import Text
 from rich.rule import Rule
+from rich.columns import Columns
+import time
 
 
 from models import Item, Usage, GameState, Enemy, Attack, ItemType
 from config import USD_PLN
+
+# TYTUL = r"""
+#  __  __ ____   ___   ____ ___ _   ___   __  _     ___   ____ _   _ 
+# |  \/  |  _ \ / _ \ / ___|_ _| \ | \ \ / / | |   / _ \ / ___| | | |
+# | |\/| | |_) | | | | |   | ||  \| |\ V /  | |  | | | | |   | |_| |
+# | |  | |  _ <| |_| | |___| || |\  | | |   | |__| |_| | |___|  _  |
+# |_|  |_|_| \_\\___/ \____|___|_| \_| |_|  |_____\___/ \____|_| |_|
+# """
+TYTUL = r"""
+$$\      $$\ $$$$$$$\   $$$$$$\   $$$$$$\  $$$$$$$$\ $$\   $$\ $$\     $$\       $$\       $$$$$$\   $$$$$$\  $$\   $$\ 
+$$$\    $$$ |$$  __$$\ $$  __$$\ $$  __$$\ \____$$  |$$$\  $$ |\$$\   $$  |      $$ |     $$  __$$\ $$  __$$\ $$ |  $$ |
+$$$$\  $$$$ |$$ |  $$ |$$ /  $$ |$$ /  \__|    $$  / $$$$\ $$ | \$$\ $$  /       $$ |     $$ /  $$ |$$ /  \__|$$ |  $$ |
+$$\$$\$$ $$ |$$$$$$$  |$$ |  $$ |$$ |         $$  /  $$ $$\$$ |  \$$$$  /        $$ |     $$ |  $$ |$$ |      $$$$$$$$ |
+$$ \$$$  $$ |$$  __$$< $$ |  $$ |$$ |        $$  /   $$ \$$$$ |   \$$  /         $$ |     $$ |  $$ |$$ |      $$  __$$ |
+$$ |\$  /$$ |$$ |  $$ |$$ |  $$ |$$ |  $$\  $$  /    $$ |\$$$ |    $$ |          $$ |     $$ |  $$ |$$ |  $$\ $$ |  $$ |
+$$ | \_/ $$ |$$ |  $$ | $$$$$$  |\$$$$$$  |$$$$$$$$\ $$ | \$$ |    $$ |          $$$$$$$$\ $$$$$$  |\$$$$$$  |$$ |  $$ |
+\__|     \__|\__|  \__| \______/  \______/ \________|\__|  \__|    \__|          \________|\______/  \______/ \__|  \__|                                   
+"""
+SZEROKOSC = 70
+
 
 console = Console()
 
@@ -27,10 +49,23 @@ def pusty_print() -> None:
     """printuje pusta linie"""
     console.print()
 
-def input_walki() -> str:
-    """Prompt wysrodkowany pod panelem walki."""
-    wciecie = " " * max(0, (console.width - 65) // 2)
-    return console.input(f"\n{wciecie}[bold cyan]❯[/] ")
+
+def wybierz_numer(ile: int) -> int:
+    """Pyta o numer 1..ile. Zwraca wybor (1-indeksowany)."""
+    while True:
+        user = input_centrowany()
+        if not user.isdigit():
+            pokaz_komunikat("Podaj liczbe")
+            continue
+        wybor = int(user)
+        if 1 <= wybor <= ile:
+            return wybor
+        pokaz_komunikat("Numer poza zakresem")
+
+def input_centrowany(szerokosc: int = 65, formatowanie: str = "bold cyan") -> str:
+    """Prompt wysrodkowany pod center tabela."""
+    wciecie = " " * max(0, (console.width - szerokosc) // 2)
+    return console.input(f"\n{wciecie}[{formatowanie}]❯[/] ")
 
 
 def pokaz_wynik(wynik: str) -> None:
@@ -115,6 +150,14 @@ def pokaz_narracje(tekst: str, narrator: str = "[#5f875f]Narrator[/]") -> None:
     )
     console.print(panel)
 
+def kolor_hp(hp: int, hp_max: int) -> str:
+    """Kolor wg progu HP"""
+    udzial = hp / hp_max if hp_max else 0
+    if udzial > 0.5:
+        return "green"
+    if udzial > 0.25:
+        return "yellow"
+    return "red"
 
 def pasek_hp(hp: int, hp_max: int, szerokosc: int = 12, kolor: str | None = None) -> str:
     """Pasek HP jako string ze znacznikami koloru."""
@@ -128,14 +171,46 @@ def pasek_hp(hp: int, hp_max: int, szerokosc: int = 12, kolor: str | None = None
     pasek = "█" * pelne + "░" * (szerokosc - pelne)
 
     if kolor is None:
-        if udzial > 0.5:
-            kolor = "green"
-        elif udzial > 0.25:
-            kolor = "yellow"
-        else:
-            kolor = "red"
+        kolor = kolor_hp(hp, hp_max)
 
     return f"[{kolor}]{pasek}[/]"
+
+def pokaz_stan_hp(state: GameState) -> None:
+    kolor = kolor_hp(state.hp, state.hp_max)
+
+    console.print(Align.center(Panel(
+        pasek_hp(state.hp, state.hp_max, 50),
+        title="[bold white]Stan zdrowia[/]",
+        subtitle=f"[{kolor}]{state.hp}[/] [dim]/[/] [green]{state.hp_max}[/]",
+        border_style="grey37",
+        box=box.ROUNDED,
+        padding=(1, 2),
+        expand=False,
+    )))
+
+def pokaz_smierc():
+    console.print(Align.center(Panel(
+        "[bold red]NIE ŻYJESZ[/]\n\n[dim]Możesz wyjść (/wyjdz) lub sprawdzić statystyki.[/]",
+        border_style="red",
+        box=box.DOUBLE,
+        width=SZEROKOSC,
+        padding=(1, 4),
+    )))
+
+def pokaz_komendy() -> None:
+    """Lista dostepnych komend gracza."""
+    tabela = nowa_tabela("Komendy", naglowek=False, min_width=60, linie=True)
+    tabela.add_column(style="bold cyan", justify="right")
+    tabela.add_column(style="dim")
+
+    tabela.add_row("/ekwipunek", "co masz przy sobie")
+    tabela.add_row("/stan", "twoje zdrowie")
+    tabela.add_row("/historia", "podsumowanie przygody")
+    tabela.add_row("/koszt", "tokeny i pieniadze")
+    tabela.add_row("/zapisz", "zapisz gre")
+    tabela.add_row("/wyjdz", "koniec")
+
+    console.print(Align.center(tabela))
 
 def pokaz_stan_walki(state: GameState, enemy: Enemy) -> None:
     """HP gracza i wroga z paskami."""
@@ -245,63 +320,91 @@ def panel_tury(
     )
     console.print(Align.center(panel))
 
+
+def pokaz_liste_saveow(savy: list[dict]) -> None:
+    tabela = nowa_tabela("Zapisane gry", min_width=80)
+    tabela.add_column("#", style="dim", justify="right", width=4)
+    tabela.add_column("Nazwa", style="bold cyan")
+    tabela.add_column("HP", justify="right")
+    tabela.add_column("")                                    # ← pasek, bez nagłówka
+    tabela.add_column("Przedmioty", style="yellow", justify="right")
+    tabela.add_column("Tury", style="dim", justify="right")
+
+    for i, save in enumerate(savy):
+        tabela.add_row(
+            str(i + 1),
+            save["nazwa"],
+            f"{save['hp']}/{save['hp_max']}",
+            pasek_hp(save["hp"], save["hp_max"], 15),
+            str(save["przedmioty"]),
+            str(save["tury"]),
+        )
+
+    console.print(Align.center(tabela))
+
+
+def wyrownaj_art(art: str) -> str:
+    """Usuwa wspolne wciecie z obu stron i wyrownuje dlugosci."""
+    linie = [l.rstrip() for l in art.strip("\n").split("\n")]    # ← rstrip usuwa martwe spacje
+
+    niepuste = [l for l in linie if l.strip()]
+    wciecie = min(len(l) - len(l.lstrip()) for l in niepuste)
+    linie = [l[wciecie:] for l in linie]
+
+    max_dl = max(len(l) for l in linie)
+    return "\n".join(l.ljust(max_dl) for l in linie)
+
+
+def pokaz_tytul() -> None:
+    console.clear()
+    console.print("\n" * 2)
+    console.print(Align.center(Text(wyrownaj_art(TYTUL), style="bold red")))
+    console.print("\n" * 2)
+    console.print(Align.center(Panel(
+        Align.center("[dim italic]Budzisz sie w ciemnosci.\nNie pamietasz, jak tu trafiles.[/]"),
+        border_style="red",
+        box=box.DOUBLE,
+        width=SZEROKOSC,
+        padding=(1, 4),
+    )))
+    console.print("\n" * 2)
+
+def pokaz_menu(sa_savy: bool) -> None:
+    """Opcje startowe jako przyciski obok siebie."""
+    nowa = Panel(
+        "[dim]1[/]\n\n[bold]NOWA GRA[/]",
+        border_style="grey37",
+        box=box.ROUNDED,
+        width=20,
+        padding=(1, 2),
+    )
+
+    if not sa_savy:
+        console.print(Align.center(nowa))
+        return
+
+    wczytaj = Panel(
+        "[dim]2[/]\n\n[bold]WCZYTAJ GRE[/]",
+        border_style="grey37",
+        box=box.ROUNDED,
+        width=20,
+        padding=(1, 2),
+    )
+
+    ustawienia = Panel(
+        "[dim]3[/]\n\n[dim]USTAWIENIA[/]",
+        border_style="grey37",
+        box=box.ROUNDED,
+        width=20,
+        padding=(1, 2),
+    )
+
+    console.print(Align.center(Columns([nowa, wczytaj, ustawienia], padding=(0, 1))))
+
 def main() -> None:
-    # --- dane testowe ---
-    miecz = Item(
-        name="miecz",
-        type=ItemType.BRON,
-        value=50,
-        attacks=[
-            Attack("light", 4, 6),
-            Attack("heavy", 10, 16, miss_chance=0.4),
-            Attack("stab", 7, 10),
-        ],
-    )
-    sztylet = Item(
-        name="sztylet",
-        type=ItemType.BRON,
-        value=20,
-        attacks=[
-            Attack("light", 3, 5),
-            Attack("stab", 6, 8),
-        ],
-    )
-    klucz = Item(name="klucz", type=ItemType.KLUCZ, value=0)
+    state = GameState(hp=87, hp_max=100)
+    pokaz_stan_hp(state)
 
-    state = GameState(hp=71, hp_max=100, inventory=[miecz, sztylet, klucz])
-    enemy = Enemy(name="goblin", hp=16, hp_max=35, damage_min=4, damage_max=8)
-
-    akcje = miecz.attacks
-
-    # --- 1. pierwsza tura (bez wyniku) ---
-    console.rule("[dim]pierwsza tura — brak wyniku[/]", style="grey37")
-    panel_tury(state, enemy, akcje)
-
-    # --- 2. tura z trafieniem ---
-    console.rule("[dim]trafienie + kontratak[/]", style="grey37")
-    wynik = "Zadales [bold]14[/] dmg  ·  [red]Goblin zadal 7 dmg[/]"
-    panel_tury(state, enemy, akcje, wynik)
-
-    # --- 3. tura z pudlem ---
-    console.rule("[dim]pudlo + kontratak[/]", style="grey37")
-    wynik = "[dim]Chybiles[/]  ·  [red]Goblin zadal 5 dmg[/]"
-    panel_tury(state, enemy, akcje, wynik)
-
-    # --- 4. wrog pada ---
-    console.rule("[dim]wrog pada[/]", style="grey37")
-    enemy_martwy = Enemy(name="goblin", hp=0, hp_max=35, damage_min=4, damage_max=8)
-    wynik = "Zadales [bold]16[/] dmg  ·  [green]Goblin pada[/]"
-    panel_tury(state, enemy_martwy, akcje, wynik)
-
-    # --- 5. gracz na skraju (czerwony pasek) ---
-    console.rule("[dim]gracz umiera[/]", style="grey37")
-    state_ranny = GameState(hp=8, hp_max=100, inventory=[miecz])
-    wynik = "[dim]Chybiles[/]  ·  [red]Goblin zadal 8 dmg[/]"
-    panel_tury(state_ranny, enemy, akcje, wynik)
-
-    # --- 6. gole rece (jedna akcja) ---
-    console.rule("[dim]gole rece — jedna akcja[/]", style="grey37")
-    panel_tury(state, enemy, [Attack("cios", 1, 2)])
 
 
 if __name__ == "__main__":

@@ -10,6 +10,8 @@ from datetime import datetime
 
 from models import Attack, GameState, Item, ItemType, Usage
 
+from ui import wybierz_numer, pokaz_liste_saveow, pokaz_menu, input_centrowany, pokaz_komunikat
+
 WERSJA_SAVE = 1
 
 def attack_to_dict(attack: Attack) -> dict:
@@ -153,44 +155,54 @@ def cmd_zapisz(
     zapisz_gre(state, usage, message_history, item_catalog, nazwa_save)
     print(f"Zapisano stan gry pod nazwa: {nazwa_save}")
 
-def wybierz_save(savy: list[str]) -> str:
-    """Pyta o numer save'a z listy. Zwraca nazwę."""
-    print("\n=== Dostepne save'y ===")
-    for i, nazwa in enumerate(savy):
-        print(f"{i+1}. {nazwa}")
 
-    while True:
-        user = input("\n > ").strip()
-        if not user.isdigit():
-            print("Podaj liczbe")
-            continue
-        wybor = int(user)
-        if 1 <= wybor <= len(savy):
-            return savy[wybor - 1]
-        print("Numer poza zakresem")
+def podejrzyj_save(nazwa: str) -> dict:
+    """Czyta metadane save'a bez odtwarzania obiektow."""
+    with open(f"saves/{nazwa}.json", "r", encoding="utf-8") as f:
+        dane = json.load(f)
+    return {
+        "hp": dane["state"]["hp"],
+        "hp_max": dane["state"]["hp_max"],
+        "przedmioty": len(dane["state"]["inventory"]),
+        "tury": len(dane["message_history"]) // 2,
+        "koszt": dane["usage"]["total_cost"],
+    }
+
+
+def wybierz_save(savy: list[str]) -> str:
+    """Pokazuje liste, pyta o numer, zwraca nazwe."""
+    dane = []
+    for nazwa in savy:
+        meta = podejrzyj_save(nazwa)
+        meta["nazwa"] = nazwa
+        dane.append(meta)
+
+    pokaz_liste_saveow(dane)
+
+    wybor = wybierz_numer(len(savy))
+    return savy[wybor - 1]
+
 
 def ekran_startowy() -> tuple[GameState, Usage, list[dict], bool]:
     savy = lista_saveow()
-    print("\n1. NOWA GRA")
-    if savy:                          # pusta lista jest fałszywa — nie potrzeba `!= []`
-        print("2. WCZYTAJ GRE")
+    pokaz_menu(bool(savy))
 
     while True:
-        user = input("\nWybierz: ").strip()
+        user = input_centrowany(formatowanie="bold red")
         if user == "1":
             state = GameState()
             usage = Usage()
             message_history = [{"role": "user", "content": GENESIS_PROMPT}]
             nowa_gra = True
             break
-        if user == "2" and savy:      # "2" ma sens TYLKO gdy są save'y
+        if user == "2" and savy:
             nazwa = wybierz_save(savy)
             state, usage, message_history, katalog = wczytaj_gre(nazwa)
             ITEM_CATALOG.clear()
             ITEM_CATALOG.update(katalog)
             nowa_gra = False
             break
-        print("Nieprawidlowy wybor")
+        pokaz_komunikat("Nieprawidlowy wybor")
     return (
         state,
         usage,
