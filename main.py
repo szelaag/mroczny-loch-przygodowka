@@ -23,7 +23,7 @@ def main() -> None:
     if start == "$$":
         modify_state(state) # tryb debug
 
-    if nowa_gra: # hp w tym momencie moglo zostac zmienione jedynie modify state
+    if nowa_gra:
         if state.hp > 0:
             response = ask_narrator(message_history, state.inventory)
             result = handle_response(response, state.inventory)

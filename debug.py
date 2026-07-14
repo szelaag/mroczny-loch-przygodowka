@@ -272,13 +272,7 @@ def krok_ataki() -> list[Attack] | object:
         print(f" $ dodano atak: {atak.name}")
 
 def cmd_create(state: GameState, parts: list[str]) -> None:
-    typy = {
-        "bron": ItemType.BRON,
-        "klucz": ItemType.KLUCZ,
-        "narzedzie": ItemType.NARZEDZIE,
-        "zuzywalny": ItemType.ZUZYWALNY,
-        "nieznany": ItemType.NIEZNANY,
-    }
+    typy = {t.value: t for t in ItemType}
 
     print("\n === kreator przedmiotu ===")
 

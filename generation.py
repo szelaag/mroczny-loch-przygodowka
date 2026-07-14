@@ -53,7 +53,7 @@ STATS_TOOL = {
         "properties": {
             "typ": {
                 "type": "string",
-                "enum": ["bron", "klucz", "narzedzie", "zuzywalny"],
+                "enum": [t.value for t in ItemType if t != ItemType.NIEZNANY],
                 "description": """na podstawie nazwy dobierasz odpowiednio, bron dla czegos czym da sie walczyc. klucz = klucz, narzedzie -> cos co jest przedmiotem ani nie zuzywalnym ani NIE KLUCZEM ani nie bronia, uzywane dla np pochodnia"""
             },
             "wartosc": {
