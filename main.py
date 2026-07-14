@@ -8,6 +8,8 @@ from cost import add_usage
 from prompts import GENESIS_PROMPT
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
+from save import cmd_zapisz, zapisz_gre
+import random
 
 
 
@@ -70,6 +72,11 @@ def main() -> None:
                 f" Input: {usage.total_input_tokens} | Output: {usage.total_output_tokens} | Suma: {usage.total_input_tokens + usage.total_output_tokens}\n"
             )
             continue
+
+        if cmd in {"/zapisz", "$zapisz"}:
+            cmd_zapisz(state, usage, message_history, ITEM_CATALOG)
+            continue
+
         if cmd == "$kill":
             state.hp = 0
             print(f"\n$ wykonano {cmd} | hp = {state.hp}")

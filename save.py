@@ -3,6 +3,7 @@ from dataclasses import asdict
 import json
 from items import create_item, ITEM_CATALOG
 import os
+import datetime
 
 
 from models import Attack, GameState, Item, ItemType, Usage
@@ -102,7 +103,51 @@ def wczytaj_gre(nazwa_save: str) -> tuple[GameState, Usage, list[dict], dict[str
         dane["message_history"],
         dict_to_item_catalog(dane["item_catalog"])
     )
+
+
+def lista_saveow() -> list[str]:
+    """Zwraca nazwy dostępnych save'ów (bez rozszerzenia)."""
+    if not os.path.exists("saves"):
+        return []
+    pliki = os.listdir("saves")
+    zwalidowane = []
+    for plik in pliki:
+        if plik.endswith(".json"):
+            zwalidowane.append(os.path.splitext(plik)[0])
+    return zwalidowane
     
+
+def cmd_zapisz(
+    state: GameState,
+    usage: Usage,
+    message_history: list[dict],
+    item_catalog: dict[str, Item],
+) -> None:
+    """Pyta o nazwę, waliduje, zapisuje save."""
+    stempel = datetime.now().strftime("%Y%m%d_%H%M")
+    sugerowana = f"save{stempel}"
+
+    zapytana = input("Wybierz nazwe save ($$ aby anulowac zapis | ENTER dla domyslnej): ").strip().lower()
+
+    if zapytana == "$$":
+        print("Anulowano zapis")
+        return
+    
+    nazwa_save = zapytana or sugerowana
+
+    if any(zn in nazwa_save for zn in "/\\."):
+        print("Niedozwolona nazwa")
+        return
+    
+
+    if nazwa_save in lista_saveow():
+        potwierdzenie = input(f"Zapis o nazwie: {nazwa_save} czy nadpisac? (tak | ENTER aby anulowac)")
+        if potwierdzenie != "tak":
+            print("Anulowano zapis")
+            return
+
+    zapisz_gre(state, usage, message_history, item_catalog, nazwa_save)
+    print(f"Zapisano stan gry pod nazwa: {nazwa_save}")
 
 def main() -> None:
     state = GameState(hp=73, inventory=[create_item("miecz"), create_item("klucz")])
