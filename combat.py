@@ -1,8 +1,9 @@
 from dataclasses import replace
-import enum
 import time
-from models import Attack, Enemy, GameState, Item, ItemType
+from models import Attack, Enemy, GameState, Item
 import random
+from ui import panel_tury, pokaz_bronie, pokaz_komunikat, pusty_print, pokaz_wynik, pokaz_gole_rece, input_walki
+
 
 ENEMY_CATALOG: dict[str, Enemy] = {
     "szczur": Enemy(name="szczur", hp=30, hp_max=30, damage_min=1, damage_max=5),
@@ -48,43 +49,36 @@ def wybierz_bron(state: GameState) -> list[Attack]:
             bronie.append(item)
 
     if not bronie:
-        print("\nNie masz broni, walczysz golymi rekoma.")
+        pokaz_gole_rece()
+        time.sleep(0.3)
         return [GOLE_RECE]
 
-    print("\n=== Wybor broni ===\n")
-    print("Dostepne bronie: ")
-    for i, bron in enumerate(bronie):
-        print(f"{i+1}. Bron: {bron.name}")
+    pokaz_bronie(bronie)
 
     while True:
-        user = input("\n > ").strip()
+        user = input_walki()
         if not user.isdigit():
-            print("Podaj liczbe")
+            pokaz_komunikat("Podaj poprawna liczbe")
             continue
         wybor = int(user)
         if 1 <= wybor <= len(bronie):
-            print(f"\nWybrana bron: {bronie[wybor - 1].name}")
+            pokaz_komunikat(f"Wybrana bron: [bold cyan]{bronie[wybor - 1].name}[/]")
             return bronie[wybor - 1].attacks
-        print("Numer poza zakresem")
+        pokaz_komunikat("Numer poza zakresem")
+
 
 def wybierz_akcje(akcje: list[Attack]) -> Attack:
-    """Wybor akcji, zwraca Attack"""
-    print("Twoja tura, wybierz atak:")
-
-    for i, akcja in enumerate(akcje):
-        print(f"{i+1}. {akcja.name} | Obrazenia: {akcja.damage_min} - {akcja.damage_max}",end="")
-        if akcja.miss_chance: print(f" | Szansa na chybienie: {akcja.miss_chance}", end="")
-        print()
-
+    """Pyta o numer akcji. NIE wyswietla tabeli — robi to panel_tury."""
     while True:
-        user = input("\n > ").strip()
+        user = input_walki()
         if not user.isdigit():
-            print("Podaj liczbe")
+            pokaz_komunikat("Podaj poprawna liczbe")
             continue
         wybor = int(user)
         if 1 <= wybor <= len(akcje):
             return akcje[wybor - 1]
-        print("Numer poza zakresem")
+        pokaz_komunikat("Numer poza zakresem")
+
 
 def policz_obrazenia(akcja: Attack) -> int | object:
     """Zwraca losowe obrazenia wramach ataku"""
@@ -92,37 +86,43 @@ def policz_obrazenia(akcja: Attack) -> int | object:
         return PUDLO
     return random.randint(akcja.damage_min, akcja.damage_max)
 
-def prowadz_walke(state: GameState, enemy: Enemy) -> bool:
-    """Odpala petle walki zwraca true - wygrana; false - przegrana"""
-    print("\n=== Walka ===\n")
-    print(f"Walczysz z {enemy.name} | Twoje HP: {state.hp} | HP Wroga: {enemy.hp}")
 
-    akcje: list[Attack] = wybierz_bron(state)
+def prowadz_walke(state: GameState, enemy: Enemy) -> bool:
+    """Petla walki. Zwraca True (wygrana) / False (przegrana)."""
+    time.sleep(2)
+    
+    akcje = wybierz_bron(state)
+    wynik = ""                                  # ← przeżywa iteracje
 
     while enemy.hp > 0 and state.hp > 0:
         time.sleep(0.5)
+        pusty_print()
+        pusty_print()
+        panel_tury(state, enemy, akcje, wynik)  # ← wynik POPRZEDNIEJ tury
         atak = wybierz_akcje(akcje)
+
+        # --- atak gracza ---
         obrazenia = policz_obrazenia(atak)
-        
         if obrazenia is PUDLO:
-            print(f"\nNie trafiles! | Wrogowi pozostalo: {enemy.hp}")
+            czesc_gracza = "[dim]Chybiles[/]"
         else:
             enemy.hp -= obrazenia
-            time.sleep(0.5)
-            print(f"\nZadales {obrazenia} dmg | Pozostalo mu: {enemy.hp}")
-        
+            czesc_gracza = f"Zadales [bold]{obrazenia}[/] dmg"
 
+        # --- wrog padl? ---
         if enemy.hp <= 0:
-            # print("Wrog padl")
-            break 
+            wynik = f"{czesc_gracza}  ·  [green]{enemy.name.capitalize()} pada[/]"
+            break
 
-        obrazenia = random.randint(enemy.damage_min, enemy.damage_max)
-        state.hp -= obrazenia
-        time.sleep(0.5)
-        print(f"\nWrog zadal: {obrazenia} dmg | Pozostalo Ci: {state.hp}")
+        # --- kontratak ---
+        kontra = random.randint(enemy.damage_min, enemy.damage_max)
+        state.hp -= kontra
+        wynik = f"{czesc_gracza}  ·  [red]{enemy.name.capitalize()} zadal {kontra} dmg[/]"
 
         if state.hp <= 0:
-            # print("Przegrales")
             break
-        print()
+
+    # --- OSTATNI wynik nie zdazyl sie wyswietlic ---
+    pokaz_wynik(wynik)
+
     return state.hp > 0

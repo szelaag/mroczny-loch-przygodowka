@@ -8,9 +8,10 @@ from cost import add_usage
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
 from save import cmd_zapisz, ekran_startowy
-from ui import pokaz_eq
+from ui import pokaz_eq, pokaz_narracje, pokaz_koszt, pokaz_stan_walki, pasek_hp, pokaz_komunikat
+import time
 
-
+from ui import console
 
 def main() -> None:
     clear_system()
@@ -27,29 +28,30 @@ def main() -> None:
         if state.hp > 0:
             response = ask_narrator(message_history, state.inventory)
             result = handle_response(response, state.inventory)
+            pokaz_narracje(result.text)
             message_history.append({"role": "assistant", "content": result.text})
             add_usage(usage, result)
     else:
         summary = summarize_history(message_history)
-        print(f"\n--- Dotychczas ---\n{summary.text}")
+        pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
         add_usage(usage, summary)
-
-        print(f"\n--- Stoisz tutaj ---\n{message_history[-1]['content']}")
+        console.rule("[orange1]Stoisz tutaj[/]")
+        pokaz_narracje(f"{message_history[-1]['content']}")
 
     while True:
-        user = input("\n > ").strip().lower()
+        user = console.input("\n[bold cyan]     > [/]").strip().lower()
         cmd = user.lower()
 
         if not user:
             continue
         
-        if cmd in {"/wyjdz", "/quit", "/exit"}:
+        if cmd in {"/wyjdz", "/quit", "/exit"}: # do zrobienia w ui
             print("Koniec przygody.")
             break
 
         if cmd in {"/historia", "/history"}:
             summary = summarize_history(message_history)
-            print(summary.text)
+            pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
             add_usage(usage, summary)
             continue
         
@@ -57,18 +59,13 @@ def main() -> None:
             pokaz_eq(state.inventory)
             continue 
             
-        if cmd in {"/stan", "/hp"}:
+        if cmd in {"/stan", "/hp"}: # do zrobienia funkcja w ui
             print("\n--- Stan ---")
             print(f" HP: {state.hp}")
             continue
 
         if cmd in {"/cost", "/koszt"}:
-            print("\n--- Koszt rozmowy ---")
-            print(f" USD: {usage.total_cost:.6f} | PLN: {usage.total_cost * USD_PLN:.6f}\n")
-            print("--- Tokeny ---")
-            print(
-                f" Input: {usage.total_input_tokens} | Output: {usage.total_output_tokens} | Suma: {usage.total_input_tokens + usage.total_output_tokens}\n"
-            )
+            pokaz_koszt(usage)
             continue
 
         if cmd in {"/zapisz", "$zapisz"}:
@@ -126,6 +123,11 @@ def main() -> None:
 
         response = ask_narrator(message_history, state.inventory)
         result = handle_response(response, state.inventory)
+
+        
+
+        pokaz_narracje(result.text)
+
         message_history.append({"role": "assistant", "content": result.text})
 
         add_usage(usage, result)
@@ -162,8 +164,19 @@ def main() -> None:
                 )
 
             message_history.append({"role": "user", "content": instrukcja})
-            response = ask_narrator(message_history, state.inventory)
+            response = ask_narrator(message_history, state.inventory, tool_choice={"type": "none"})
             result = handle_response(response, state.inventory)
+
+            if not result.text:
+                print(f"[DEBUG] pusty tekst | stop_reason={result.stop_reason}")
+                print(f"[DEBUG] bloki: {[b.type for b in response.content]}")
+
+
+            if result.text:
+                pokaz_narracje(result.text)
+            else:
+                pokaz_komunikat("[dim](narrator milczy)[/]")     # albo cokolwiek
+
             message_history.pop()  # USUŃ instrukcję — nie zostaje w historii (nie truje)
             message_history.append({"role": "assistant", "content": result.text})
             add_usage(usage, result)
