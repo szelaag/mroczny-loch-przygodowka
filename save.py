@@ -29,6 +29,7 @@ def state_to_dict(state: GameState) -> dict:
     """Zamienia GameState na dict"""
     return {
         "hp": state.hp,
+        "hp_max": state.hp_max,
         "inventory": [item_to_dict(item) for item in state.inventory]
     }
 
@@ -86,6 +87,7 @@ def dict_to_state(dane: dict) -> GameState:
     """Odtwarza GameState z dict"""
     return GameState(
         hp=dane["hp"],
+        hp_max=dane["hp_max"],
         inventory=[dict_to_item(item) for item in dane["inventory"]]
     )
 

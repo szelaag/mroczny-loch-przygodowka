@@ -5,9 +5,9 @@ from models import Attack, Enemy, GameState, Item, ItemType
 import random
 
 ENEMY_CATALOG: dict[str, Enemy] = {
-    "szczur": Enemy(name="szczur", hp=10, damage_min=1, damage_max=5),
-    "goblin": Enemy(name="goblin", hp=25, damage_min=4, damage_max=8),
-    "szkielet": Enemy(name="szkielet", hp=40, damage_min=6, damage_max=12)
+    "szczur": Enemy(name="szczur", hp=30, hp_max=30, damage_min=1, damage_max=5),
+    "goblin": Enemy(name="goblin", hp=35, hp_max=35, damage_min=4, damage_max=8),
+    "szkielet": Enemy(name="szkielet", hp=45, hp_max=45, damage_min=6, damage_max=12)
 }
 
 GOLE_RECE = Attack("cios", 1, 2)
@@ -18,7 +18,7 @@ def create_enemy(name: str) -> Enemy:
     name = name.lower()
     if name in ENEMY_CATALOG:
         return replace(ENEMY_CATALOG[name])     
-    return Enemy(name=name, hp=20, damage_min=3, damage_max=6)
+    return Enemy(name=name, hp=30, hp_max=30, damage_min=3, damage_max=6)
 
 
 COMBAT_TOOL = {

@@ -25,12 +25,14 @@ class Item:
 @dataclass
 class GameState:
     hp: int = 100
+    hp_max: int = 100
     inventory: list[Item] = field(default_factory=list)
 
 @dataclass
 class Enemy:
     name: str
     hp: int
+    hp_max: int
     damage_min: int
     damage_max: int
 

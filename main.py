@@ -1,11 +1,10 @@
 from generation import generuj_statystyki
 from helper import clear_system
 from items import ITEM_CATALOG, create_item
-from models import ItemType, Usage, GameState, Enemy
+from models import ItemType
 from config import USD_PLN
 from api import ask_narrator, handle_response, summarize_history
 from cost import add_usage
-from prompts import GENESIS_PROMPT
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
 from save import cmd_zapisz, ekran_startowy
