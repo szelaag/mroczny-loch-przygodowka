@@ -1,9 +1,11 @@
 from ast import Tuple
 from dataclasses import asdict
 import json
+from queue import Empty
 from items import create_item, ITEM_CATALOG
+from prompts import GENESIS_PROMPT
 import os
-import datetime
+from datetime import datetime
 
 
 from models import Attack, GameState, Item, ItemType, Usage
@@ -149,18 +151,66 @@ def cmd_zapisz(
     zapisz_gre(state, usage, message_history, item_catalog, nazwa_save)
     print(f"Zapisano stan gry pod nazwa: {nazwa_save}")
 
+def wybierz_save(savy: list[str]) -> str:
+    """Pyta o numer save'a z listy. Zwraca nazwę."""
+    print("\n=== Dostepne save'y ===")
+    for i, nazwa in enumerate(savy):
+        print(f"{i+1}. {nazwa}")
+
+    while True:
+        user = input("\n > ").strip()
+        if not user.isdigit():
+            print("Podaj liczbe")
+            continue
+        wybor = int(user)
+        if 1 <= wybor <= len(savy):
+            return savy[wybor - 1]
+        print("Numer poza zakresem")
+
+def ekran_startowy() -> tuple[GameState, Usage, list[dict], bool]:
+    savy = lista_saveow()
+    print("\n1. NOWA GRA")
+    if savy:                          # pusta lista jest fałszywa — nie potrzeba `!= []`
+        print("2. WCZYTAJ GRE")
+
+    while True:
+        user = input("\nWybierz: ").strip()
+        if user == "1":
+            state = GameState()
+            usage = Usage()
+            message_history = [{"role": "user", "content": GENESIS_PROMPT}]
+            nowa_gra = True
+            break
+        if user == "2" and savy:      # "2" ma sens TYLKO gdy są save'y
+            nazwa = wybierz_save(savy)
+            state, usage, message_history, katalog = wczytaj_gre(nazwa)
+            ITEM_CATALOG.clear()
+            ITEM_CATALOG.update(katalog)
+            nowa_gra = False
+            break
+        print("Nieprawidlowy wybor")
+    return (
+        state,
+        usage,
+        message_history,
+        nowa_gra
+    )
+
+
+
 def main() -> None:
-    state = GameState(hp=73, inventory=[create_item("miecz"), create_item("klucz")])
-    usage = Usage(total_cost=0.02, total_input_tokens=1500, total_output_tokens=300)
-    history = [{"role": "user", "content": "Rozpocznij przygode"}]
+    # state = GameState(hp=73, inventory=[create_item("miecz"), create_item("klucz")])
+    # usage = Usage(total_cost=0.02, total_input_tokens=1500, total_output_tokens=300)
+    # history = [{"role": "user", "content": "Rozpocznij przygode"}]
 
-    zapisz_gre(state, usage, history, ITEM_CATALOG, "test")
-    state2, usage2, history2, catalog2 = wczytaj_gre("test")
+    # zapisz_gre(state, usage, history, ITEM_CATALOG, "test")
+    # state2, usage2, history2, catalog2 = wczytaj_gre("test")
 
-    print(state == state2)          # ma być True
-    print(usage == usage2)          # ma być True
-    print(history == history2)      # ma być True
-    print(ITEM_CATALOG == catalog2) # ma być True
+    # print(state == state2)          # ma być True
+    # print(usage == usage2)          # ma być True
+    # print(history == history2)      # ma być True
+    # print(ITEM_CATALOG == catalog2) # ma być True
+    ekran_startowy()
 
 if __name__ == "__main__":
     main()

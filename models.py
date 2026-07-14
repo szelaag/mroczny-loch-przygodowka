@@ -5,7 +5,7 @@ class ItemType(Enum):
     BRON = "bron"
     KLUCZ = "klucz"
     NARZEDZIE = "narzedzie"
-    ZUZYWALNY = "uzywalny"
+    ZUZYWALNY = "zuzywalny"
     NIEZNANY = "nieznany"
 
 @dataclass

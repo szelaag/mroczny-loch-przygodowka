@@ -8,30 +8,33 @@ from cost import add_usage
 from prompts import GENESIS_PROMPT
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
-from save import cmd_zapisz, zapisz_gre
-import random
+from save import cmd_zapisz, ekran_startowy
 
 
 
 def main() -> None:
-    usage = Usage()
-    # Genesis prompt + append do histori
-    message_history: list[dict] = [{"role": "user", "content": GENESIS_PROMPT}]
-    state = GameState()
     clear_system()
     print("=== Przygodowka ===")
+
+    state, usage, message_history, nowa_gra = ekran_startowy()
+
     start = input("\nENTER aby rozpoczac ").lower().strip()
 
     if start == "$$":
         modify_state(state) # tryb debug
 
-    if state.hp > 0: # hp w tym momencie moglo zostac zmienione jedynie modify state
-        response = ask_narrator(message_history, state.inventory)
-        result = handle_response(response, state.inventory)
-        message_history.append({"role": "assistant", "content": result.text})
-        
-        add_usage(usage, result)
+    if nowa_gra: # hp w tym momencie moglo zostac zmienione jedynie modify state
+        if state.hp > 0:
+            response = ask_narrator(message_history, state.inventory)
+            result = handle_response(response, state.inventory)
+            message_history.append({"role": "assistant", "content": result.text})
+            add_usage(usage, result)
+    else:
+        summary = summarize_history(message_history)
+        print(f"\n--- Dotychczas ---\n{summary.text}")
+        add_usage(usage, summary)
 
+        print(f"\n--- Stoisz tutaj ---\n{message_history[-1]['content']}")
 
     while True:
         user = input("\n > ").strip().lower()
