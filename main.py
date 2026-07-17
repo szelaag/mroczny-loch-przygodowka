@@ -6,7 +6,7 @@ from cost import add_usage
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
 from save import cmd_zapisz, ekran_startowy
-from ui import pokaz_eq, pokaz_narracje, pokaz_koszt, pokaz_komendy, pokaz_stan_hp, pokaz_komunikat, pokaz_tytul, pokaz_smierc
+from ui import pokaz_eq, pokaz_narracje, pokaz_koszt, pokaz_komendy, pokaz_stan_hp, pokaz_komunikat, pokaz_tytul, pokaz_smierc, pokaz_sam_tytul
 from ui import console
 
 import sys
@@ -21,6 +21,8 @@ def main() -> None:
 
     if DEBUG:
         modify_state(state)
+
+    pokaz_sam_tytul()
 
     if nowa_gra:
         if state.hp > 0:
@@ -156,31 +158,37 @@ def main() -> None:
                     f"Opisz zakończenie walki i chwilę po niej jako narrator: w drugiej osobie, "
                     f"wplatając wynik w fikcję (przeciwnik pada), BEZ wspominania liczb, HP, systemu czy mechaniki. "
                     f"Zakończ wezwaniem do dalszego działania."
+                    f"ZAWSZE odpowiedz tekstem, nawet jeśli uważasz, że nie ma co dodać "
+                    f"Opisz JEDNYM-DWOMA zdaniami fizyczny obraz martwego przeciwnika i stan gracza. "
+                    f"Potem WEZWANIE do dalszego dzialania (pytanie)."
                 )
             else:
                 instrukcja = (
                     f"[INSTRUKCJA SYSTEMOWA, nie gracz]: Gracz przegrał walkę z {enemy.name} i ginie. "
                     f"Opisz jego śmierć jako narrator: w drugiej osobie, mrocznie i krótko, "
                     f"wplatając ją w fikcję, BEZ wspominania liczb, HP, systemu czy mechaniki."
+                    f"ZAWSZE odpowiedz tekstem, nawet jeśli uważasz, że nie ma co dodać"
                 )
 
             message_history.append({"role": "user", "content": instrukcja})
             response = ask_narrator(message_history, state.inventory, tool_choice={"type": "none"})
             result = handle_response(response, state.inventory)
+            add_usage(usage, result)
 
             if not result.text:
-                print(f"[DEBUG] pusty tekst | stop_reason={result.stop_reason}")
-                print(f"[DEBUG] bloki: {[b.type for b in response.content]}")
+                response = ask_narrator(message_history, state.inventory, tool_choice={"type": "none"})
+                result = handle_response(response, state.inventory)
+                add_usage(usage, result)
 
 
             if result.text:
                 pokaz_narracje(result.text)
             else:
-                pokaz_komunikat("[dim](narrator milczy)[/]")     # albo cokolwiek
+                tekst = f"{enemy.name.capitalize()} pada." if wygrana else "Ciemność cię pochłania."
+                pokaz_narracje(tekst)
 
             message_history.pop()  # USUŃ instrukcję — nie zostaje w historii (nie truje)
             message_history.append({"role": "assistant", "content": result.text})
-            add_usage(usage, result)
 
 if __name__ == "__main__":
     main()

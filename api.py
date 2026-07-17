@@ -39,7 +39,10 @@ def handle_response(response: Message, inventory: list[Item]) -> Response:
             narracja = block.text
         elif block.type == "tool_use" and block.name == "aktualizuj_ekwipunek":
             for item in block.input["dodane"]:
-                nowy = create_item(item)
+                nazwa = item.lower()
+                if any(i.name == nazwa for i in inventory):    # ← KOD sprawdza # rozwiazanie tymczasowe pozbycia sie duplikatow
+                    continue                                    # już ma, pomijamy
+                nowy = create_item(nazwa)
                 inventory.append(nowy)
                 if nowy.type == ItemType.NIEZNANY:
                     nowe_nieznane.append(nowy.name)

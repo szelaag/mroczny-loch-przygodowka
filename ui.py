@@ -148,6 +148,7 @@ def pokaz_narracje(tekst: str, narrator: str = "[#5f875f]Narrator[/]") -> None:
         padding=(1, 2),
         expand=True
     )
+    console.print()
     console.print(panel)
 
 def kolor_hp(hp: int, hp_max: int) -> str:
@@ -368,6 +369,11 @@ def pokaz_tytul() -> None:
         padding=(1, 4),
     )))
     console.print("\n" * 2)
+
+def pokaz_sam_tytul() -> None:
+    console.clear()
+    console.print("\n" * 2)
+    console.print(Align.center(Text(wyrownaj_art(TYTUL), style="bold red")))
 
 def pokaz_menu(sa_savy: bool) -> None:
     """Opcje startowe jako przyciski obok siebie."""
