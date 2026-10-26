@@ -32,15 +32,19 @@ INVENTORY_TOOL = {
 
 ITEM_CATALOG: dict[str, Item] = {
     "miecz": Item(
-        name="miecz", type=ItemType.BRON, value=50,
+        name="miecz",
+        type=ItemType.BRON,
+        value=50,
         attacks=[
             Attack("light", 4, 6),
             Attack("heavy", 10, 16, miss_chance=0.4),
             Attack("stab", 7, 10),
         ],
     ),
-    "sztylet": Item(          # druga broń do testów wyboru
-        name="sztylet", type=ItemType.BRON, value=20,
+    "sztylet": Item(  # druga broń do testów wyboru
+        name="sztylet",
+        type=ItemType.BRON,
+        value=20,
         attacks=[
             Attack("light", 3, 5),
             Attack("stab", 6, 8),
@@ -48,14 +52,18 @@ ITEM_CATALOG: dict[str, Item] = {
     ),
     "klucz": Item(name="klucz", type=ItemType.KLUCZ, value=0),
     "pochodnia": Item(name="pochodnia", type=ItemType.NARZEDZIE, value=10),
-    "bandaz": Item(name="bandaz", type=ItemType.ZUZYWALNY, value=25)
+    "bandaz": Item(name="bandaz", type=ItemType.ZUZYWALNY, value=25),
 }
+
 
 def create_item(name: str) -> Item:
     name = name.lower()
     if name in ITEM_CATALOG:
         return replace(ITEM_CATALOG[name])
-    return Item(name=name, type=ItemType.NIEZNANY, value=0)  # attacks puste (default) — bez akcji
+    return Item(
+        name=name, type=ItemType.NIEZNANY, value=0
+    )  # attacks puste (default) — bez akcji
+
 
 def inventory_to_text(inventory: list[Item]) -> str:
     """Zamienia ekwipunek na czytelny opis dla narratora."""
@@ -63,4 +71,3 @@ def inventory_to_text(inventory: list[Item]) -> str:
         return "Gracz nie ma żadnych przedmiotów."
     nazwy = [item.name for item in inventory]
     return "Gracz posiada: " + ", ".join(nazwy)
-

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
+
 class ItemType(Enum):
     BRON = "bron"
     KLUCZ = "klucz"
@@ -8,25 +9,29 @@ class ItemType(Enum):
     ZUZYWALNY = "zuzywalny"
     NIEZNANY = "nieznany"
 
+
 @dataclass
 class Attack:
     name: str
     damage_min: int
     damage_max: int
-    miss_chance: float = 0.0        # szansa chybienia (0.0 = zawsze trafia)
+    miss_chance: float = 0.0  # szansa chybienia (0.0 = zawsze trafia)
+
 
 @dataclass
 class Item:
     name: str
     type: ItemType
     value: int
-    attacks: list[Attack] = field(default_factory=list)   # NOWE
+    attacks: list[Attack] = field(default_factory=list)  # NOWE
+
 
 @dataclass
 class GameState:
     hp: int = 100
     hp_max: int = 100
     inventory: list[Item] = field(default_factory=list)
+
 
 @dataclass
 class Enemy:
@@ -35,6 +40,7 @@ class Enemy:
     hp_max: int
     damage_min: int
     damage_max: int
+
 
 @dataclass
 class Response:

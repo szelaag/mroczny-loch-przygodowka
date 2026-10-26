@@ -6,7 +6,17 @@ from cost import add_usage
 from combat import create_enemy, prowadz_walke
 from debug import modify_state
 from save import cmd_zapisz, ekran_startowy
-from ui import pokaz_eq, pokaz_narracje, pokaz_koszt, pokaz_komendy, pokaz_stan_hp, pokaz_komunikat, pokaz_tytul, pokaz_smierc, pokaz_sam_tytul
+from ui import (
+    pokaz_eq,
+    pokaz_narracje,
+    pokaz_koszt,
+    pokaz_komendy,
+    pokaz_stan_hp,
+    pokaz_komunikat,
+    pokaz_tytul,
+    pokaz_smierc,
+    pokaz_sam_tytul,
+)
 from ui import console
 
 import sys
@@ -32,14 +42,18 @@ def main() -> None:
             message_history.append({"role": "assistant", "content": result.text})
             add_usage(usage, result)
     else:
-        chce = console.input("\n[dim]Przypomniec historie? (ENTER = tak | n = nie)[/] ").strip().lower()
+        chce = (
+            console.input("\n[dim]Przypomniec historie? (ENTER = tak | n = nie)[/] ")
+            .strip()
+            .lower()
+        )
 
         if chce != "n":
             summary = summarize_history(message_history)
             pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
             add_usage(usage, summary)
-        
-        pokaz_narracje(message_history[-1]["content"])     # ← ZAWSZE (darmowe)
+
+        pokaz_narracje(message_history[-1]["content"])  # ← ZAWSZE (darmowe)
 
     while True:
         user = console.input("\n[bold cyan]     > [/]").strip().lower()
@@ -47,8 +61,8 @@ def main() -> None:
 
         if not user:
             continue
-        
-        if cmd in {"/wyjdz", "/quit", "/exit"}: # do zrobienia w ui
+
+        if cmd in {"/wyjdz", "/quit", "/exit"}:  # do zrobienia w ui
             print("Koniec przygody.")
             break
 
@@ -61,12 +75,12 @@ def main() -> None:
             pokaz_narracje(summary.text, "[orange1]Archiwista[/]")
             add_usage(usage, summary)
             continue
-        
+
         if cmd in {"/ekwipunek", "/eq"}:
             pokaz_eq(state.inventory)
-            continue 
-            
-        if cmd in {"/stan", "/hp"}: 
+            continue
+
+        if cmd in {"/stan", "/hp"}:
             pokaz_stan_hp(state)
             continue
 
@@ -110,7 +124,7 @@ def main() -> None:
         if cmd in {"$state", "$debug", "$$"}:
             modify_state(state)
             continue
-            
+
         if cmd.startswith("/"):
             pokaz_komendy()
             continue
@@ -121,13 +135,10 @@ def main() -> None:
             pokaz_smierc()
             continue
 
-
         message_history.append({"role": "user", "content": user})
 
         response = ask_narrator(message_history, state.inventory)
         result = handle_response(response, state.inventory)
-
-        
 
         pokaz_narracje(result.text)
 
@@ -138,13 +149,11 @@ def main() -> None:
         for nazwa in set(result.nowe_nieznane):
             item = generuj_statystyki(nazwa, usage)
             ITEM_CATALOG[nazwa] = item
-        
-        
+
         for item in state.inventory[:]:
             if item.type == ItemType.NIEZNANY and item.name in ITEM_CATALOG:
                 state.inventory.remove(item)
                 state.inventory.append(ITEM_CATALOG[item.name])
-
 
         if result.combat_with:
             enemy = create_enemy(result.combat_with)
@@ -171,24 +180,32 @@ def main() -> None:
                 )
 
             message_history.append({"role": "user", "content": instrukcja})
-            response = ask_narrator(message_history, state.inventory, tool_choice={"type": "none"})
+            response = ask_narrator(
+                message_history, state.inventory, tool_choice={"type": "none"}
+            )
             result = handle_response(response, state.inventory)
             add_usage(usage, result)
 
             if not result.text:
-                response = ask_narrator(message_history, state.inventory, tool_choice={"type": "none"})
+                response = ask_narrator(
+                    message_history, state.inventory, tool_choice={"type": "none"}
+                )
                 result = handle_response(response, state.inventory)
                 add_usage(usage, result)
-
 
             if result.text:
                 pokaz_narracje(result.text)
             else:
-                tekst = f"{enemy.name.capitalize()} pada." if wygrana else "Ciemność cię pochłania."
+                tekst = (
+                    f"{enemy.name.capitalize()} pada."
+                    if wygrana
+                    else "Ciemność cię pochłania."
+                )
                 pokaz_narracje(tekst)
 
             message_history.pop()  # USUŃ instrukcję — nie zostaje w historii (nie truje)
             message_history.append({"role": "assistant", "content": result.text})
+
 
 if __name__ == "__main__":
     main()

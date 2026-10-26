@@ -3,11 +3,18 @@ from dataclasses import asdict
 from generation import generuj_statystyki
 from models import GameState, Item, ItemType, Attack, Enemy
 from items import ITEM_CATALOG, create_item
-from combat import ENEMY_CATALOG, create_enemy, prowadz_walke, wybierz_akcje, wybierz_bron
+from combat import (
+    ENEMY_CATALOG,
+    create_enemy,
+    prowadz_walke,
+    wybierz_akcje,
+    wybierz_bron,
+)
 
 
 COFNIJ = object()
 ANULUJ = object()
+
 
 def zapytaj_liczbe(prompt: str) -> int | object:
     """Pyta o liczbę całkowitą. Zwraca int, COFNIJ albo ANULUJ."""
@@ -41,9 +48,11 @@ def zapytaj_float(prompt: str, domyslna: float = 0.0) -> float | object:
             return wartosc
         print(" $ podaj wartosc miedzy 0.0 a 1.0")
 
+
 def show_catalog(catalog: dict) -> None:
     for keys in catalog:
         print(asdict(catalog[keys]))
+
 
 def cmd_show_catalog(parts: list[str]) -> None:
     if len(parts) > 2:
@@ -62,6 +71,7 @@ def cmd_show_catalog(parts: list[str]) -> None:
         else:
             print(f"$ Nie ma katalogu: {user}")
 
+
 def cmd_set_hp(state: GameState, parts: list[str]) -> None:
     if len(parts) == 1:
         user = zapytaj_liczbe("$ Liczba na ktora ustawic: ")
@@ -77,18 +87,22 @@ def cmd_set_hp(state: GameState, parts: list[str]) -> None:
     else:
         print("$ Niepoprawny format | $sethp <liczba>")
 
+
 def show_eq(eq: list[Item], detailed: bool = False) -> None:
     if detailed:
         print("\n=== EQ gracza ===")
         for i, item in enumerate(eq):
             print()
-            print(f"{i+1}. Nazwa: {item.name}")
+            print(f"{i + 1}. Nazwa: {item.name}")
             print(f"- Type: {item.type.name}")
             print(f"- Wartosc: {item.value}")
             if item.attacks:
                 print("- Ataki: ")
                 for i, attack in enumerate(item.attacks):
-                    print(f" > {i+1} Nazwa: {attack.name} | DMG: {attack.damage_min} - {attack.damage_max}", end="")
+                    print(
+                        f" > {i + 1} Nazwa: {attack.name} | DMG: {attack.damage_min} - {attack.damage_max}",
+                        end="",
+                    )
                     if attack.miss_chance > 0.0:
                         print(f" | Miss: {attack.miss_chance}", end="")
                     print()
@@ -98,14 +112,16 @@ def show_eq(eq: list[Item], detailed: bool = False) -> None:
             print(" Pusto")
         else:
             for i, item in enumerate(eq):
-                print(f" {i+1}. {item.name} | Wartosc: {item.value}") 
+                print(f" {i + 1}. {item.name} | Wartosc: {item.value}")
 
 
 def cmd_show_cmds() -> None:
     print("\n=== lista komend ===\n")
     print("$walka <nazwa_przeciwnika> | symuluje walke z wybranym przeciwnikiem")
     print("$show <hp | eq | state> | wyswietla hp/eq/stan")
-    print("$spawn <nazwa:ilosc,nazwa2:ilosc2> | dodaje do eq przedmioty z katalogu lub fallback | domyslna ilosc 1")
+    print(
+        "$spawn <nazwa:ilosc,nazwa2:ilosc2> | dodaje do eq przedmioty z katalogu lub fallback | domyslna ilosc 1"
+    )
     print("$testset | dodaje zestaw roznych itemow do eq")
     print("$create | kreator nowego przedmiotu do item_catalog")
 
@@ -114,18 +130,26 @@ def cmd_show(state: GameState, parts: list[str]) -> None:
     if len(parts) == 1:
         while True:
             user = input("\nCo wyswietlic? (hp | eq | state)\n >> ")
-            if user == "eq": parts.append("eq"); break
-            elif user == "hp": parts.append("hp"); break
-            elif user == "state": parts.append("state"); break
-            elif user == "catalog": parts.append("catalog"); break
+            if user == "eq":
+                parts.append("eq")
+                break
+            elif user == "hp":
+                parts.append("hp")
+                break
+            elif user == "state":
+                parts.append("state")
+                break
+            elif user == "catalog":
+                parts.append("catalog")
+                break
             else:
                 print("Wybierz z podanych")
     if parts[1] == "hp":
         print(f"\n=== HP gracza: {state.hp} ===")
-        
+
     elif parts[1] == "eq":
         show_eq(state.inventory, True)
-        
+
     elif parts[1] == "state":
         print(f"\n=== HP gracza: {state.hp} ===")
         show_eq(state.inventory, True)
@@ -137,7 +161,7 @@ def cmd_spawn(state: GameState, parts: list[str]) -> None:
     if len(parts) == 1:
         print("\n=== katalog ===")
         for i, nazwa in enumerate(ITEM_CATALOG):
-            print(f"{i+1}. {nazwa}")
+            print(f"{i + 1}. {nazwa}")
         print("\n Sposob uzycia: item,item:ilosc")
         user = input("\n Co chcesz dodac ($$ aby anulowac): ")
         if user == "$$":
@@ -175,16 +199,19 @@ def cmd_spawn(state: GameState, parts: list[str]) -> None:
 
 def cmd_walka(state: GameState, parts: list[str]) -> None:
     state.hp = 100
-    if len(parts) == 1:                    
+    if len(parts) == 1:
         print("\n=== przeciwnicy ===")
         for enemy in ENEMY_CATALOG:
             print(f"{enemy}")
-        przeciwnik = input("\nPodaj nazwe przeciwnika (lub $$ aby anulowac): ").lower().strip()
+        przeciwnik = (
+            input("\nPodaj nazwe przeciwnika (lub $$ aby anulowac): ").lower().strip()
+        )
         if przeciwnik == "$$":
             return
-    else:                                  
+    else:
         przeciwnik = parts[1]
     prowadz_walke(state, create_enemy(przeciwnik))
+
 
 def cmd_testset(state: GameState) -> None:
     print("\n=== dodawanie zestawu testowego ===\n")
@@ -198,7 +225,7 @@ def krok_nazwa() -> str | object:
         if user == "$$":
             return ANULUJ
         if user == "$$$":
-            return COFNIJ          # z pierwszego kroku cofnięcie = obsłuży maszyna
+            return COFNIJ  # z pierwszego kroku cofnięcie = obsłuży maszyna
         if user:
             return user.lower()
         print(" $ nazwa nie moze byc pusta")
@@ -224,6 +251,7 @@ def krok_wartosc() -> int | object:
     """Pyta o wartość przedmiotu."""
     return zapytaj_liczbe("\n Wartosc przedmiotu ($$ anuluj | $$$ cofnij): ")
 
+
 def zapytaj_jeden_atak() -> Attack | object:
     """Pyta o pola jednego ataku. Zwraca Attack, COFNIJ (przerwij ten atak) albo ANULUJ."""
     nazwa = input("\n  Nazwa ataku (enter=koniec | $$$ cofnij | $$ anuluj): ").strip()
@@ -232,19 +260,25 @@ def zapytaj_jeden_atak() -> Attack | object:
     if nazwa == "$$$":
         return COFNIJ
     if nazwa == "":
-        return None               # pusty = koniec dodawania ataków
+        return None  # pusty = koniec dodawania ataków
 
     dmg_min = zapytaj_liczbe("   dmg min: ")
-    if dmg_min is ANULUJ: return ANULUJ
-    if dmg_min is COFNIJ: return COFNIJ
+    if dmg_min is ANULUJ:
+        return ANULUJ
+    if dmg_min is COFNIJ:
+        return COFNIJ
 
     dmg_max = zapytaj_liczbe("   dmg max: ")
-    if dmg_max is ANULUJ: return ANULUJ
-    if dmg_max is COFNIJ: return COFNIJ
+    if dmg_max is ANULUJ:
+        return ANULUJ
+    if dmg_max is COFNIJ:
+        return COFNIJ
 
     miss = zapytaj_float("   szansa pudla (0.0-1.0, enter=0): ")
-    if miss is ANULUJ: return ANULUJ
-    if miss is COFNIJ: return COFNIJ
+    if miss is ANULUJ:
+        return ANULUJ
+    if miss is COFNIJ:
+        return COFNIJ
 
     return Attack(nazwa.lower(), dmg_min, dmg_max, miss)
 
@@ -260,16 +294,17 @@ def krok_ataki() -> list[Attack] | object:
             return ANULUJ
         if atak is COFNIJ:
             if ataki:
-                usuniety = ataki.pop()       # usuń ostatni atak
+                usuniety = ataki.pop()  # usuń ostatni atak
                 print(f" $ usunieto atak: {usuniety.name}")
             else:
-                return COFNIJ                 # pusto → cofnij do poprzedniego kroku
+                return COFNIJ  # pusto → cofnij do poprzedniego kroku
             continue
-        if atak is None:                      # pusty enter = koniec
+        if atak is None:  # pusty enter = koniec
             return ataki
 
         ataki.append(atak)
         print(f" $ dodano atak: {atak.name}")
+
 
 def cmd_create(state: GameState, parts: list[str]) -> None:
     typy = {t.value: t for t in ItemType}
@@ -309,8 +344,8 @@ def cmd_create(state: GameState, parts: list[str]) -> None:
         if wynik is COFNIJ:
             if indeks == 0:
                 print(" $ to pierwszy krok, nie mozna cofnac")
-                continue                 # zostań na nazwie
-            indeks -= 1                  # cofnij do poprzedniego kroku
+                continue  # zostań na nazwie
+            indeks -= 1  # cofnij do poprzedniego kroku
             continue
 
         # Zapisz wynik, idź naprzód
@@ -319,11 +354,15 @@ def cmd_create(state: GameState, parts: list[str]) -> None:
 
     # Podgląd
     print("\n === podglad przedmiotu ===")
-    print(f" Nazwa: {dane['nazwa']} | Typ: {dane['typ'].name} | Wartosc: {dane['wartosc']}")
+    print(
+        f" Nazwa: {dane['nazwa']} | Typ: {dane['typ'].name} | Wartosc: {dane['wartosc']}"
+    )
     if dane["ataki"]:
         print(" Ataki:")
         for atak in dane["ataki"]:
-            print(f"  - {atak.name}: {atak.damage_min}-{atak.damage_max}, miss {atak.miss_chance}")
+            print(
+                f"  - {atak.name}: {atak.damage_min}-{atak.damage_max}, miss {atak.miss_chance}"
+            )
 
     # Potwierdzenie
     user = input("\n Potwierdzasz? (enter = zapisz | $$ = anuluj): ").strip().lower()
@@ -348,6 +387,7 @@ def cmd_create(state: GameState, parts: list[str]) -> None:
     if user == "tak":
         state.inventory.append(create_item(dane["nazwa"]))
         print(f" $ dodano '{dane['nazwa']}' do ekwipunku")
+
 
 # def cmd_generate(state: GameState, parts: list[str]) -> None:
 #     if len(parts) > 1:
@@ -396,7 +436,7 @@ def modify_state(state: GameState):
             cmd_set_hp(state, parts)
             continue
 
-        #TEMP
+        # TEMP
         elif parts[0] == "$bron":
             bron = wybierz_bron(state)
             print(bron)

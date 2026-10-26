@@ -9,5 +9,6 @@ dependencies = [
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
     "rich>=15.0.0",
+    "ruff>=0.15.22",
     "textual>=8.2.8",
 ]

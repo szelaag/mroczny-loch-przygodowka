@@ -2,13 +2,22 @@ from dataclasses import replace
 import time
 from models import Attack, Enemy, GameState, Item
 import random
-from ui import panel_tury, pokaz_bronie, pokaz_komunikat, pusty_print, pokaz_wynik, pokaz_gole_rece, input_centrowany, wybierz_numer
+from ui import (
+    panel_tury,
+    pokaz_bronie,
+    pokaz_komunikat,
+    pusty_print,
+    pokaz_wynik,
+    pokaz_gole_rece,
+    input_centrowany,
+    wybierz_numer,
+)
 
 
 ENEMY_CATALOG: dict[str, Enemy] = {
     "szczur": Enemy(name="szczur", hp=30, hp_max=30, damage_min=1, damage_max=5),
     "goblin": Enemy(name="goblin", hp=35, hp_max=35, damage_min=4, damage_max=8),
-    "szkielet": Enemy(name="szkielet", hp=45, hp_max=45, damage_min=6, damage_max=12)
+    "szkielet": Enemy(name="szkielet", hp=45, hp_max=45, damage_min=6, damage_max=12),
 }
 
 GOLE_RECE = Attack("cios", 1, 2)
@@ -18,7 +27,7 @@ PUDLO = object()
 def create_enemy(name: str) -> Enemy:
     name = name.lower()
     if name in ENEMY_CATALOG:
-        return replace(ENEMY_CATALOG[name])     
+        return replace(ENEMY_CATALOG[name])
     return Enemy(name=name, hp=30, hp_max=30, damage_min=3, damage_max=6)
 
 
@@ -40,6 +49,7 @@ COMBAT_TOOL = {
         "required": ["przeciwnik"],
     },
 }
+
 
 def wybierz_bron(state: GameState) -> list[Attack]:
     """Wybieranie broni, zwraca liste atakow wybranej broni"""
@@ -90,9 +100,9 @@ def policz_obrazenia(akcja: Attack) -> int | object:
 def prowadz_walke(state: GameState, enemy: Enemy) -> bool:
     """Petla walki. Zwraca True (wygrana) / False (przegrana)."""
     time.sleep(2)
-    
+
     akcje = wybierz_bron(state)
-    wynik = ""                                  # ← przeżywa iteracje
+    wynik = ""  # ← przeżywa iteracje
 
     while enemy.hp > 0 and state.hp > 0:
         time.sleep(0.5)
@@ -117,7 +127,9 @@ def prowadz_walke(state: GameState, enemy: Enemy) -> bool:
         # --- kontratak ---
         kontra = random.randint(enemy.damage_min, enemy.damage_max)
         state.hp -= kontra
-        wynik = f"{czesc_gracza}  ·  [red]{enemy.name.capitalize()} zadal {kontra} dmg[/]"
+        wynik = (
+            f"{czesc_gracza}  ·  [red]{enemy.name.capitalize()} zadal {kontra} dmg[/]"
+        )
 
         if state.hp <= 0:
             break

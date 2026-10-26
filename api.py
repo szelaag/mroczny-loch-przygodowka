@@ -32,7 +32,7 @@ def ask_narrator(
 
 def handle_response(response: Message, inventory: list[Item]) -> Response:
     narracja = ""
-    combat_with = None 
+    combat_with = None
     nowe_nieznane = []
     for block in response.content:
         if block.type == "text":
@@ -40,8 +40,10 @@ def handle_response(response: Message, inventory: list[Item]) -> Response:
         elif block.type == "tool_use" and block.name == "aktualizuj_ekwipunek":
             for item in block.input["dodane"]:
                 nazwa = item.lower()
-                if any(i.name == nazwa for i in inventory):    # ← KOD sprawdza # rozwiazanie tymczasowe pozbycia sie duplikatow
-                    continue                                    # już ma, pomijamy
+                if any(
+                    i.name == nazwa for i in inventory
+                ):  # ← KOD sprawdza # rozwiazanie tymczasowe pozbycia sie duplikatow
+                    continue  # już ma, pomijamy
                 nowy = create_item(nazwa)
                 inventory.append(nowy)
                 if nowy.type == ItemType.NIEZNANY:
@@ -59,7 +61,7 @@ def handle_response(response: Message, inventory: list[Item]) -> Response:
         output_tokens=response.usage.output_tokens,
         stop_reason=response.stop_reason,
         combat_with=combat_with,
-        nowe_nieznane=nowe_nieznane
+        nowe_nieznane=nowe_nieznane,
     )
 
 
@@ -95,4 +97,4 @@ msg = ask_narrator(
     [],
     tool_choice={"type": "none"},
 )
-print([b.type for b in msg.content])     # ma być ['text'], nigdy 'tool_use'
+print([b.type for b in msg.content])  # ma być ['text'], nigdy 'tool_use'
